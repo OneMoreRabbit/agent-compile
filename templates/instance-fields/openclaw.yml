@@ -1,38 +1,69 @@
 # Snapshot instance-fields scrub list — openclaw flavour
-# Contract: ../../../docs/contracts/snapshot-instance-fields-openclaw-v0_1.md
+# Contract: ../../../../docs/contracts/snapshot-instance-fields-openclaw-v0_2.md
 #
 # Paths listed here are stripped from both actual and expected openclaw.json
 # before snapshot diffs them. Dotted notation; arrays addressed with [*].
 #
-# STATUS: STUB. Promote to schema_version: 1 when the first openclaw
-# probe-report from image-compile lands, and author the real list against
-# that probe's observed instance writes.
+# v1 authored against the first real probe-report from
+#   image-compile build openclaw v2026.5.5 → bundle 2026.5.5-r1
+# plus the schema dump openclaw-config-schema-2026.5.5.json.
+#
+# Two categories:
+#   1. OpenClaw-self-managed: written back into openclaw.json by openclaw itself
+#      after a clean boot. Discovered via schema descriptions ("Auto-set when
+#      OpenClaw writes the config", "automatically maintained") and the probe
+#      report's post-boot capture.
+#   2. Instance-compile-added: written by agent-compile during instance compile
+#      from the agent's registry entry. Per-instance values that don't belong
+#      in template-level deltas.
 
 flavour: openclaw
-schema_version: stub
-authored_against: ""
+schema_version: 1
+authored_against: 2026.5.5-r1
 
 paths:
-  # Agent identity
+  # --- OpenClaw self-managed ---------------------------------------------
+  # Schema: "Metadata fields automatically maintained by OpenClaw to record
+  # write/version history for this config file. Keep these values system-managed."
+  - meta.lastTouchedAt
+  - meta.lastTouchedVersion
+
+  # Wizard state. Schema: "Setup wizard state tracking fields that record the
+  # most recent guided setup run details." Per-instance/per-host noise.
+  - wizard.lastRunAt
+  - wizard.lastRunMode
+  - wizard.lastRunVersion
+  - wizard.lastRunCommit
+  - wizard.lastRunCommand
+
+  # --- Instance-compile-added: agent identity ----------------------------
   - agent.name
   - agent.model
 
-  # Channel identity (per-instance handles and bot names)
+  # --- Instance-compile-added: channel identity --------------------------
+  # Bot names and handles are per-deployed-instance; allowFrom is per-instance
+  # access scope. Never templated.
   - channels.discord.bot_name
   - channels.discord.handle
   - channels.discord.allowFrom
-  - channels.telegram.handle
   - channels.telegram.bot_name
+  - channels.telegram.handle
 
-  # SecretRef tokens — identical between template and instance compile,
-  # listed defensively
+  # --- SecretRefs (defensive) --------------------------------------------
+  # These are SecretRefs in both template and instance compile — identical
+  # in value. Listed defensively in case a future openclaw release writes
+  # a resolved scalar back into the config post-auth.
   - channels.discord.token
   - channels.telegram.token
   - models.auth.anthropic.key
   - models.auth.openai.key
   - gateway.auth.token
+  - gateway.remote.token
 
-  # dprox endpoint resolved per-instance from agent.org
+  # --- Instance-compile-added: dprox routing -----------------------------
+  # Endpoint resolved per-instance from agent.org via dprox_endpoints.yml.
+  # Cert paths are stable across the platform but listed defensively in
+  # case a future probe shows them as instance-resolved.
   - dprox.endpoint
   - dprox.ca_cert
   - dprox.client_cert

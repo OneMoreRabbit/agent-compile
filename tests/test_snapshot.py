@@ -175,7 +175,8 @@ def test_snapshot_rejects_cross_flavour(cfg):
         )
 
 
-def test_snapshot_warns_when_scrub_list_is_stub(cfg, recwarn):
+def test_snapshot_active_scrub_list_emits_no_stub_warning(cfg, recwarn):
+    """v1 scrub list (schema_version: 1) should not produce the stub warning."""
     fetcher = _build_fetcher_from_compile(cfg)
     snapshot_mod.snapshot(
         cfg,
@@ -183,7 +184,34 @@ def test_snapshot_warns_when_scrub_list_is_stub(cfg, recwarn):
         target_template_id_str="openclaw:marketing_arc:v3",
         fetcher=fetcher,
     )
-    assert any("stubbed" in str(w.message) for w in recwarn.list)
+    assert not any("stubbed" in str(w.message) for w in recwarn.list)
+
+
+def test_snapshot_strips_openclaw_self_managed_fields(cfg):
+    """Operator-modified `meta.lastTouchedAt` (an openclaw-self-managed field) must
+    not leak into the snapshot template patch — it's a per-host write that openclaw
+    re-emits on every config write."""
+    fetcher = _build_fetcher_from_compile(cfg)
+    host = "marten"
+    root = f"/mnt/raid/arc/agents/{AGENT}"
+    flavour_filename = cfg.flavour("openclaw").config_filename
+    # Mutate `meta.lastTouchedAt` on the "host" side
+    actual = json.loads(fetcher.files[f"{host}:{root}/configs/main/{flavour_filename}"])
+    actual.setdefault("meta", {})["lastTouchedAt"] = "2030-01-01T00:00:00Z"
+    actual["meta"]["lastTouchedVersion"] = "0.99.0"
+    actual.setdefault("wizard", {})["lastRunAt"] = "2030-01-01T00:00:00Z"
+    fetcher.files[f"{host}:{root}/configs/main/{flavour_filename}"] = json.dumps(actual)
+
+    snapshot_mod.snapshot(
+        cfg,
+        agent_name=AGENT,
+        target_template_id_str="openclaw:marketing_arc:v3",
+        fetcher=fetcher,
+    )
+    tpl = registry_mod.load_template(cfg, "openclaw", "marketing_arc", 3)
+    overrides_blob = json.dumps(tpl.overrides)
+    assert "2030-01-01" not in overrides_blob
+    assert "0.99.0" not in overrides_blob
 
 
 def test_snapshot_unknown_agent(cfg):

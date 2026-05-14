@@ -1,4 +1,5 @@
 {
+  "$schema": "openclaw://schema/openclaw.json",
   "agent": {
     "model": "stub/stub",
     "name": ""
@@ -18,21 +19,41 @@
       "enabled": false,
       "token": {
         "id": "DISCORD_BOT_TOKEN",
+        "provider": "default",
         "source": "env"
       }
     }
   },
   "gateway": {
     "auth": {
+      "mode": "token",
       "token": {
         "id": "OPENCLAW_GATEWAY_TOKEN",
+        "provider": "default",
         "source": "env"
       }
     },
     "bind": "lan",
-    "port": 18789
+    "mode": "local",
+    "port": 18789,
+    "remote": {
+      "token": {
+        "id": "OPENCLAW_GATEWAY_TOKEN",
+        "provider": "default",
+        "source": "env"
+      }
+    }
+  },
+  "meta": {
+    "lastTouchedAt": "2026-05-14T13:24:34Z",
+    "lastTouchedVersion": "0.1.0"
   },
   "models": {
     "auth": {}
+  },
+  "wizard": {
+    "lastRunAt": "2026-05-14T13:24:34Z",
+    "lastRunMode": "local",
+    "lastRunVersion": "image-compile-probe"
   }
 }

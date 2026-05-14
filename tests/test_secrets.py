@@ -46,6 +46,37 @@ def test_walk_ignores_source_not_env():
     assert secrets.collect_names(json, []) == []
 
 
+def test_walk_matches_three_field_secretref():
+    """openclaw v2026.5.5+ requires `provider` alongside `source` and `id`.
+
+    The walker is shape-based — `source == "env"` plus a string `id` — and
+    treats any other keys as opaque attributes. This locks the forward-compat
+    contract called out in [[agent-compile-alignment-notes-v0_1]].
+    """
+    json = {
+        "token": {
+            "source": "env",
+            "provider": "default",
+            "id": "OPENCLAW_GATEWAY_TOKEN",
+        }
+    }
+    assert secrets.collect_names(json, []) == ["OPENCLAW_GATEWAY_TOKEN"]
+
+
+def test_walk_matches_secretref_with_unknown_future_keys():
+    """Any extra keys beyond source/id/provider are treated as opaque."""
+    json = {
+        "token": {
+            "source": "env",
+            "provider": "default",
+            "version": 2,
+            "rotates_every_days": 30,
+            "id": "TOKEN_X",
+        }
+    }
+    assert secrets.collect_names(json, []) == ["TOKEN_X"]
+
+
 def test_walk_finds_refs_inside_lists():
     json = {"tokens": [{"source": "env", "id": "TOK_A"}, {"source": "env", "id": "TOK_B"}]}
     assert secrets.collect_names(json, []) == ["TOK_A", "TOK_B"]
