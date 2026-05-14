@@ -3,7 +3,7 @@ registry:
   archive_root: ~/registry/.archive
 
 ghcr:
-  org: arcpower
+  org: jobcpf
 
 paths:
   templates_dir: agent_templates

@@ -39,7 +39,7 @@ def test_compile_compose_yml_contents(cfg):
     compile_mod.compile_agent(cfg, AGENT)
     root = cfg.compiled_agent_path(AGENT)
     compose_text = (root / "compose.yml").read_text(encoding="utf-8")
-    assert "ghcr.io/arcpower/openclaw-runtime:2026.5.5-r1" in compose_text
+    assert "ghcr.io/jobcpf/openclaw-runtime:2026.5.5-r1" in compose_text
     assert f"openclaw_{AGENT}" in compose_text
     assert f"AGENT_NAME: \"{AGENT}\"" in compose_text
     assert f"/mnt/raid/arc/agents/{AGENT}/configs:/agent/configs:rw" in compose_text
