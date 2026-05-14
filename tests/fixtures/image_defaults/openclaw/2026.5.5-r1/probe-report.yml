@@ -1,0 +1,39 @@
+probe_metadata:
+  ran_at: 2026-05-14T10:01:00Z
+  image_tag: ghcr.io/arcpower/openclaw-runtime:2026.5.5-r1
+  duration_seconds: 35
+  result: success
+  healthz:
+    status: 200
+    response_time_ms: 1240
+  readyz:
+    status: 503
+    body: "channels unauthenticated"
+    response_time_ms: 80
+
+surface_writes:
+  configs:
+    - path: configs/main/openclaw.json
+      change: modified
+      size_bytes: 1842
+  memory:
+    - path: memory/main/workspace/
+      change: added
+      kind: directory
+  sessions: []
+  scratch: []
+
+in_container_writes: []
+
+observed_paths:
+  sessions_path: /home/agent/.openclaw/sessions
+  memory_path: /home/agent/.openclaw/memory
+  exec_approvals_path: /home/agent/.openclaw/exec-approvals.json
+  workspace_path: /home/agent/.openclaw/workspace
+  scratch_path: null
+
+flags_observed:
+  - "Fixture probe report; do not use for instance-fields list authoring."
+
+notes: |
+  Hand-authored fixture. Not a real probe output.

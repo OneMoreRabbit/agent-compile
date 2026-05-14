@@ -1,0 +1,10 @@
+image_tag: ghcr.io/arcpower/openclaw-runtime:2026.5.5-r1
+image_version: 2026.5.5-r1
+upstream_version: v2026.5.5
+wrapper_revision: r1
+wrapper_repo_head: 0000000000000000000000000000000000000000
+image_compile_version: 0.1.0
+build_date: 2026-05-14T10:00:00Z
+built_by: fixture
+built_on: fixture
+notes: "Hand-authored fixture bundle matching image-defaults-bundle-schema-v0_1."

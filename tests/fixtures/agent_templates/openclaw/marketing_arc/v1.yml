@@ -1,0 +1,32 @@
+name: marketing_arc
+version: 1
+flavour: openclaw
+parent: image_defaults:openclaw:2026.5.5-r1
+description: "Marketing agent baseline for ARC."
+
+derived_from:
+  kind: hand_authored
+  source: ""
+  at: 2026-05-14T11:00:00Z
+
+overrides:
+  openclaw_json:
+    channels:
+      discord:
+        enabled: true
+        dmPolicy: "free"
+
+  workspace:
+    SOUL.md: |
+      # Marketing agent persona
+
+      You are a marketing-focused agent for ARC Power.
+
+  skills:
+    add:
+      - social_channel_etiquette
+
+secret_manifest:
+  - SOCIAL_API_KEY
+
+preferred_image: openclaw:2026.5.5-r1

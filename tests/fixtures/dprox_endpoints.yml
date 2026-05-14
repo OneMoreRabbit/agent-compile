@@ -1,0 +1,3 @@
+endpoints:
+  arc: "https://dprox.arc.internal:8443"
+  cpf: "https://dprox.cpf.internal:8443"

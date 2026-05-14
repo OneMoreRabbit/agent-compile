@@ -1,0 +1,28 @@
+name: marketing_arc
+version: 2
+flavour: openclaw
+parent: openclaw:marketing_arc:v1
+description: "v2 — refined dmPolicy; removed allowFrom override."
+
+derived_from:
+  kind: hand_authored
+  source: ""
+  at: 2026-05-14T11:30:00Z
+
+overrides:
+  openclaw_json:
+    channels:
+      discord:
+        dmPolicy: "pairing"
+
+  workspace:
+    AGENTS.md: |
+      # Marketing agent — v2 guidance
+      Be helpful, be honest, be precise.
+
+  skills:
+    add:
+      - dprox_query
+
+secret_manifest: []
+preferred_image: openclaw:2026.5.5-r1

@@ -1,0 +1,39 @@
+# Snapshot instance-fields scrub list — openclaw flavour
+# Contract: ../../../docs/contracts/snapshot-instance-fields-openclaw-v0_1.md
+#
+# Paths listed here are stripped from both actual and expected openclaw.json
+# before snapshot diffs them. Dotted notation; arrays addressed with [*].
+#
+# STATUS: STUB. Promote to schema_version: 1 when the first openclaw
+# probe-report from image-compile lands, and author the real list against
+# that probe's observed instance writes.
+
+flavour: openclaw
+schema_version: stub
+authored_against: ""
+
+paths:
+  # Agent identity
+  - agent.name
+  - agent.model
+
+  # Channel identity (per-instance handles and bot names)
+  - channels.discord.bot_name
+  - channels.discord.handle
+  - channels.discord.allowFrom
+  - channels.telegram.handle
+  - channels.telegram.bot_name
+
+  # SecretRef tokens — identical between template and instance compile,
+  # listed defensively
+  - channels.discord.token
+  - channels.telegram.token
+  - models.auth.anthropic.key
+  - models.auth.openai.key
+  - gateway.auth.token
+
+  # dprox endpoint resolved per-instance from agent.org
+  - dprox.endpoint
+  - dprox.ca_cert
+  - dprox.client_cert
+  - dprox.client_key

@@ -1,0 +1,38 @@
+{
+  "agent": {
+    "model": "stub/stub",
+    "name": ""
+  },
+  "agents": {
+    "defaults": {
+      "sandbox": {
+        "mode": "non-main"
+      },
+      "workspace": "/home/agent/.openclaw/workspace"
+    }
+  },
+  "channels": {
+    "discord": {
+      "allowFrom": [],
+      "dmPolicy": "pairing",
+      "enabled": false,
+      "token": {
+        "id": "DISCORD_BOT_TOKEN",
+        "source": "env"
+      }
+    }
+  },
+  "gateway": {
+    "auth": {
+      "token": {
+        "id": "OPENCLAW_GATEWAY_TOKEN",
+        "source": "env"
+      }
+    },
+    "bind": "lan",
+    "port": 18789
+  },
+  "models": {
+    "auth": {}
+  }
+}

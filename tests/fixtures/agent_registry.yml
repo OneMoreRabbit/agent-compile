@@ -1,0 +1,20 @@
+meta:
+  version: "0.4"
+
+agents:
+  - name: agent_arc_marketing_bob
+    template: openclaw:marketing_arc:v1
+    image: openclaw:2026.5.5-r1
+    org: arc
+    classification:
+      vertical: marketing
+      scope: arc
+      grade: 2
+    local_user:
+      uid: 13042
+      primary_gid: 13042
+      supp_gids: []
+    channels:
+      discord:
+        bot_name: "marketing-bob"
+    host: marten

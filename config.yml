@@ -1,0 +1,46 @@
+registry:
+  root: ~/registry
+  archive_root: ~/registry/.archive
+
+ghcr:
+  org: arcpower
+
+paths:
+  templates_dir: agent_templates
+  image_defaults_dir: image_defaults
+  agent_registry_file: agent_registry.yml
+  compatibility_matrix_file: compatibility_matrix.yml
+  compiled_root: .compiled/agents
+  skills_library_dir: skills
+  dprox_endpoints_file: dprox_endpoints.yml
+
+bless:
+  recency_window_days: 30
+
+test_mode:
+  startup_timeout_seconds: 30
+  cleanup_on_success: true
+  cleanup_on_failure: false
+
+snapshot:
+  ssh_options:
+    - "-o"
+    - "BatchMode=yes"
+    - "-o"
+    - "ConnectTimeout=10"
+
+flavours:
+  openclaw:
+    config_filename: openclaw.json
+    image_line: openclaw-runtime
+    health_endpoint: /healthz
+    ready_endpoint: /readyz
+    port_env_var: OPENCLAW_PORT
+    default_port: 18789
+    port_range_low: 28789
+    port_range_high: 28999
+    instance_fields_list: templates/instance-fields/openclaw.yml
+    endpoints_file: openclaw_endpoints.yml
+
+logging:
+  level: INFO
