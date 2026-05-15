@@ -20,6 +20,7 @@ from typing import Any, Dict, List, Optional
 
 import yaml
 
+from . import agent_entry
 from . import compose as compose_mod
 from . import matrix as matrix_mod
 from . import merge as merge_mod
@@ -98,12 +99,11 @@ def compile_pipeline(
     agent_name = agent["name"]
 
     try:
-        template_id = parse_template_id(str(agent["template"]))
-        image_ref = parse_image_ref(str(agent["image"]))
-    except (IdentifierError, KeyError) as e:
-        raise CompileError(
-            f"agent {agent_name}: invalid template/image identifier ({e})"
-        ) from e
+        template_id = parse_template_id(agent_entry.app_template(agent))
+        image_ref = parse_image_ref(agent_entry.app_image(agent))
+        agent_entry.agent_org(agent)  # validate share_class.org present up front
+    except (IdentifierError, agent_entry.AgentEntryError, KeyError) as e:
+        raise CompileError(f"agent {agent_name}: {e}") from e
     if template_id.flavour != image_ref.flavour:
         raise FlavourMismatchError(
             f"agent {agent_name}: template flavour {template_id.flavour!r} "
@@ -180,9 +180,9 @@ def stub_agent_for_template(
     stub_uid: int = 65534,
     stub_gid: int = 65534,
     org: str = "arc",
-    host: str = "marten",
+    host: str = "otter",
 ) -> Dict[str, Any]:
-    """Build an in-memory agent dict suitable for ``template test``.
+    """Build an in-memory agent dict (live v0.4 + app-block shape) for ``template test``.
 
     Stub UID/GID match image-compile's probe (65534/65534 — nobody).
     """
@@ -192,13 +192,20 @@ def stub_agent_for_template(
     name = f"test_{tid.flavour}_{tid.name}_v{tid.version}_{test_uuid}"
     return {
         "name": name,
-        "template": template_id_str,
-        "image": image_ref_str,
-        "org": org,
-        "classification": {"vertical": "any", "scope": "any", "grade": 0},
-        "local_user": {"uid": stub_uid, "primary_gid": stub_gid, "supp_gids": []},
-        "channels": {},
+        "share_class": {
+            "org": org,
+            "grade": 0,
+            "vertical": "any",
+            "scope": "global",
+        },
+        "local_user": {"uid": stub_uid, "primary_gid": stub_gid},
+        "cert": {"issue": True, "validity_days": 365},
         "host": host,
+        "app": {
+            "template": template_id_str,
+            "image": image_ref_str,
+            "channels": {},
+        },
     }
 
 
@@ -213,7 +220,7 @@ def _apply_instance_overrides(
 
     delta["agent"] = {"name": agent.get("name", "")}
 
-    reg_channels = agent.get("channels") or {}
+    reg_channels = agent_entry.app_channels(agent)
     if reg_channels:
         channels: Dict[str, Any] = {}
         for ch_name, ch_block in reg_channels.items():
@@ -229,11 +236,10 @@ def _apply_instance_overrides(
         if channels:
             delta["channels"] = channels
 
-    org = agent.get("org")
-    if org is not None:
-        endpoint = _lookup_dprox_endpoint(cfg, str(org))
-        if endpoint:
-            delta["dprox"] = {"endpoint": endpoint}
+    org = agent_entry.agent_org(agent)
+    endpoint = _lookup_dprox_endpoint(cfg, org)
+    if endpoint:
+        delta["dprox"] = {"endpoint": endpoint}
 
     return merge_mod.merge_json(flavour_json, delta)
 
@@ -313,7 +319,7 @@ def _emit_artifacts(
             f"openclaw_{agent['name']}_net",
         ],
         "key_type": "ed25519",
-        "validity_days": 365,
+        "validity_days": agent_entry.cert_validity_days(agent),
         "purpose": "client_auth",
         "notes": f"Agent {agent['name']} -> dprox mTLS",
     }

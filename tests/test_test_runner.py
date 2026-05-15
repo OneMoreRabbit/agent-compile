@@ -30,11 +30,12 @@ def test_stub_agent_shape():
         image_ref_str="openclaw:2026.5.5-r1",
         test_uuid="abc12345",
     )
-    assert stub["template"] == "openclaw:marketing_arc:v1"
-    assert stub["image"] == "openclaw:2026.5.5-r1"
+    assert stub["app"]["template"] == "openclaw:marketing_arc:v1"
+    assert stub["app"]["image"] == "openclaw:2026.5.5-r1"
     assert stub["local_user"]["uid"] == 65534
     assert stub["local_user"]["primary_gid"] == 65534
-    assert stub["channels"] == {}
+    assert stub["app"]["channels"] == {}
+    assert stub["share_class"]["org"] == "arc"
     assert stub["name"].startswith("test_openclaw_marketing_arc_v1_")
 
 

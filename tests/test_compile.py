@@ -139,11 +139,13 @@ def test_compile_missing_agent(cfg):
 
 
 def test_compile_flavour_mismatch(cfg):
-    """An agent whose image and template flavours disagree fails fast."""
+    """An agent whose app.image and app.template flavours disagree fails fast."""
     reg_path = cfg.agent_registry_path()
     reg = yaml.safe_load(reg_path.read_text(encoding="utf-8"))
-    reg["agents"][0]["image"] = "nanoclaw:1.2.3-r1"
-    reg_path.write_text(yaml.safe_dump(reg, sort_keys=False))
+    for agent in reg["agents"]:
+        if agent["name"] == AGENT:
+            agent["app"]["image"] = "nanoclaw:1.2.3-r1"
+    reg_path.write_text(yaml.safe_dump(reg, sort_keys=False), encoding="utf-8")
 
     with pytest.raises(compile_mod.FlavourMismatchError):
         compile_mod.compile_agent(cfg, AGENT)

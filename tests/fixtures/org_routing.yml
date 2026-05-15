@@ -1,0 +1,21 @@
+# TEST FIXTURE — org_routing.yml
+#
+# Mirrors the live routing table at:
+#   ~/ansible/inventory/group_vars/all/org_routing.yml
+# Windows source: VSProjects/Ansible/ansible/inventory/group_vars/all/org_routing.yml
+#
+# agent-compile reads org_routing[<share_class.org>].vector_host to resolve an
+# agent's appserver when the agent entry omits an explicit `host`.
+#
+# KEEP IN SYNC with the live routing table when orgs are reassigned.
+
+org_routing:
+  arc:
+    fileserver: beaver
+    vector_host: otter
+  cpf:
+    fileserver: beaver
+    vector_host: otter
+  top:
+    fileserver: beaver
+    vector_host: otter

@@ -6,13 +6,28 @@ See the build brief at `../integrations/agent-compile-build-brief-v0_1.md` for t
 
 ## Status
 
-MVP complete. 167 unit tests passing.
+MVP complete + aligned with the live `agent_registry.yml` v0.4 schema. 183 unit tests passing.
 
 - [x] Pass 1 — scaffolding, identifiers, registry I/O, matrix R/W
 - [x] Pass 2 — chain resolution + merge semantics + template diff
 - [x] Pass 3 — template new/fork/edit + instance compile + compose.yml + port allocation
 - [x] Pass 4 — test mode (Docker runner) + matrix bless + verify
 - [x] Pass 5 — snapshot mode (SSH fetch, JSON merge-patch diff, instance-fields scrub)
+- [x] Registry alignment — reads the live v0.4 schema: `app` block, `share_class.org`, org_routing host fallback. See `../docs/contracts/agent-registry-app-block-v0_1.md`.
+
+## Development notes
+
+**The test fixtures track the live Ansible registry — keep them in sync.**
+`tests/fixtures/agent_registry.yml` and `tests/fixtures/org_routing.yml` mirror
+the live files at `~/ansible/registry/agent_registry.yml` and
+`~/ansible/inventory/group_vars/all/org_routing.yml` (Windows source:
+`VSProjects/Ansible/ansible/...`). The first four agents in the fixture are
+copied **verbatim** from the live registry as a schema-fidelity reference;
+`test_agent_entry.py::test_fixture_reference_agents_match_live_v0_4_shape`
+fails loudly if that shape drifts. When the live registry schema changes,
+re-copy from the live file — do not hand-edit the fixture into a shape that
+diverges from production. This is the discipline that prevents the
+schema-divergence class of bug (see the app-block contract for the history).
 
 ## CLI verbs
 

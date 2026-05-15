@@ -39,9 +39,11 @@ class Config:
     compiled_root: str
     skills_library_dir: str
     dprox_endpoints_file: str
+    org_routing_file: str
     bless_recency_window_days: int
     repo_root: Path
     ghcr_org: str = "arcpower"
+    org_routing_path_override: Optional[Path] = None
     flavours: Dict[str, FlavourConfig] = field(default_factory=dict)
     raw: Dict[str, Any] = field(default_factory=dict)
 
@@ -68,6 +70,21 @@ class Config:
 
     def dprox_endpoints_path(self) -> Path:
         return self.registry_root / self.dprox_endpoints_file
+
+    def org_routing_path(self) -> Path:
+        """Path to ``org_routing.yml``.
+
+        Lives outside the registry root (``inventory/`` vs ``registry/``).
+        An explicit override (used by tests) wins; otherwise the configured
+        ``org_routing_file`` is resolved — absolute as-is, relative against
+        the registry root.
+        """
+        if self.org_routing_path_override is not None:
+            return self.org_routing_path_override
+        p = Path(self.org_routing_file).expanduser()
+        if p.is_absolute():
+            return p
+        return (self.registry_root / p).resolve()
 
     def flavour(self, name: str) -> FlavourConfig:
         if name not in self.flavours:
@@ -98,11 +115,14 @@ def _default_config_path() -> Path:
 def load(
     config_path: Optional[Path] = None,
     registry_root_override: Optional[Path] = None,
+    org_routing_path_override: Optional[Path] = None,
 ) -> Config:
     """Load ``config.yml`` and return a typed ``Config``.
 
     ``registry_root_override`` (CLI ``--registry-root``) overrides the
-    ``registry.root`` field for testing.
+    ``registry.root`` field for testing. ``org_routing_path_override``
+    pins the org_routing file path directly (used by tests, where the
+    inventory tree isn't reproduced).
     """
     if config_path is None:
         config_path = _default_config_path()
@@ -161,9 +181,13 @@ def load(
         compiled_root=paths.get("compiled_root", ".compiled/agents"),
         skills_library_dir=paths.get("skills_library_dir", "skills"),
         dprox_endpoints_file=paths.get("dprox_endpoints_file", "dprox_endpoints.yml"),
+        org_routing_file=paths.get(
+            "org_routing_file", "../inventory/group_vars/all/org_routing.yml"
+        ),
         bless_recency_window_days=int(bless.get("recency_window_days", 30)),
         repo_root=repo_root,
         ghcr_org=ghcr_org,
+        org_routing_path_override=org_routing_path_override,
         flavours=flavours,
         raw=raw,
     )

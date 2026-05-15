@@ -36,6 +36,7 @@ from typing import Any, Callable, Dict, List, Optional, Protocol
 
 import yaml
 
+from . import agent_entry
 from . import matrix as matrix_mod
 from . import paths as paths_mod
 from . import registry as registry_mod
@@ -209,10 +210,10 @@ def snapshot(
     agent = registry_mod.get_agent(cfg, agent_name)
 
     try:
-        current_tid = parse_template_id(str(agent["template"]))
+        current_tid = parse_template_id(agent_entry.app_template(agent))
         target_tid = parse_template_id(target_template_id_str)
-        image_ref = parse_image_ref(str(agent["image"]))
-    except (IdentifierError, KeyError) as e:
+        image_ref = parse_image_ref(agent_entry.app_image(agent))
+    except (IdentifierError, agent_entry.AgentEntryError, KeyError) as e:
         raise SnapshotError(f"identifier error: {e}") from e
 
     if current_tid.flavour != target_tid.flavour:
@@ -236,9 +237,10 @@ def snapshot(
     resolved = resolver_mod.resolve(cfg, current_tid)
 
     fetcher = fetcher or _default_fetcher(cfg)
-    host = agent.get("host")
-    if not host:
-        raise SnapshotError(f"agent {agent_name}: no host in registry entry")
+    try:
+        host = paths_mod.resolve_agent_host(cfg, agent)
+    except paths_mod.HostResolutionError as e:
+        raise SnapshotError(str(e)) from e
 
     host_root = paths_mod.agent_host_root(agent)
     flavour_filename = cfg.flavour(current_tid.flavour).config_filename

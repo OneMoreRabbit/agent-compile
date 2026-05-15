@@ -41,11 +41,10 @@ def render(
             f"image_version={image_version}: {template_path}"
         )
 
-    host = agent.get("host")
-    if not host:
-        raise ComposeError(
-            f"agent {agent.get('name')!r}: registry entry missing required 'host' field"
-        )
+    try:
+        host = paths_mod.resolve_agent_host(cfg, agent)
+    except paths_mod.HostResolutionError as e:
+        raise ComposeError(str(e)) from e
 
     allocation = port_allocator.allocate(cfg, flavour, agent["name"], host)
 

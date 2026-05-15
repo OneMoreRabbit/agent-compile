@@ -273,3 +273,20 @@ def get_agent(cfg: Config, agent_name: str) -> Dict[str, Any]:
         if agent.get("name") == agent_name:
             return agent
     raise RegistryError(f"agent not found in registry: {agent_name}")
+
+
+# --- org routing ------------------------------------------------------------
+
+
+def load_org_routing(cfg: Config) -> Dict[str, Any]:
+    """Load the ``org_routing`` table.
+
+    Returns ``{<org>: {fileserver, vector_host}}``. Empty dict if the file is
+    absent — callers decide whether that's fatal.
+    """
+    path = cfg.org_routing_path()
+    if not path.is_file():
+        return {}
+    with path.open(encoding="utf-8") as f:
+        data = yaml.safe_load(f) or {}
+    return data.get("org_routing") or {}

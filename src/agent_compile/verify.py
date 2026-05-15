@@ -8,7 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import List
 
-from . import compile as compile_mod
+from . import agent_entry
 from . import matrix as matrix_mod
 from . import registry as registry_mod
 from .config import Config
@@ -34,9 +34,9 @@ def verify_agent(cfg: Config, agent_name: str) -> VerifyResult:
         return result
 
     try:
-        template_id = parse_template_id(str(agent["template"]))
-        image_ref = parse_image_ref(str(agent["image"]))
-    except (IdentifierError, KeyError) as e:
+        template_id = parse_template_id(agent_entry.app_template(agent))
+        image_ref = parse_image_ref(agent_entry.app_image(agent))
+    except (IdentifierError, agent_entry.AgentEntryError, KeyError) as e:
         result.ok = False
         result.failures.append(f"identifier: {e}")
         return result

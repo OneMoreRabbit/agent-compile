@@ -13,6 +13,9 @@ paths:
   compiled_root: .compiled/agents
   skills_library_dir: skills
   dprox_endpoints_file: dprox_endpoints.yml
+  # org_routing.yml lives outside the registry root (inventory/, not registry/).
+  # Relative paths resolve against registry.root; absolute paths used as-is.
+  org_routing_file: ../inventory/group_vars/all/org_routing.yml
 
 bless:
   recency_window_days: 30

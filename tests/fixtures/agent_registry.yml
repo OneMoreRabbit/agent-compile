@@ -1,20 +1,166 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# TEST FIXTURE — agent_registry.yml
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# FUTURE DEVELOPMENT — KEEP THIS FIXTURE IN SYNC WITH THE LIVE REGISTRY.
+#
+# This fixture mirrors the live registry schema at:
+#     ~/ansible/registry/agent_registry.yml   (v0.4, on the orchestrator)
+# Windows source of truth: VSProjects/Ansible/ansible/registry/agent_registry.yml
+#
+# The first four agents below (agent_oversight, agent_arc_exec,
+# agent_arc_finance_global, agent_platform_test) are copied verbatim from the
+# live registry as a SCHEMA-FIDELITY REFERENCE. They have no `app` block, so
+# agent-compile cannot compile them — that is correct: the live registry does
+# not yet carry app blocks (the field is reserved). They exist here purely so
+# the test suite fails loudly if the rbac/sync/apply schema drifts.
+#
+# `agent_arc_marketing_bob` is the agent-compile TEST agent. It carries the
+# `app` block per the agent-registry-app-block-v0_1 contract — the shape
+# agent-compile actually consumes. It deliberately OMITS `host` so the test
+# suite exercises the org_routing default-host resolution (routing migration,
+# 2026-05-15).
+#
+# When the live registry schema changes, or the app-block contract is revised,
+# update this fixture from the live file. A test (test_registry_fixture_*)
+# guards the core field shapes.
+# ═══════════════════════════════════════════════════════════════════════════════
+
 meta:
   version: "0.4"
+  stage: beta
+  last_modified: "2026-05-15"
+  last_modified_by: "fixture"
+  description: "Test fixture mirroring agent_registry.yml v0.4"
 
 agents:
+
+  # ─── verbatim from live registry — schema reference, not compiled by tests ───
+
+  - name: agent_oversight
+    description: "Multi-org oversight, full access across all orgs"
+    access:
+      - org: arc
+        grade: 0
+        vertical: any
+        scope: global
+      - org: cpf
+        grade: 0
+        vertical: any
+        scope: global
+    share_class:
+      org: top
+      grade: 0
+      vertical: any
+      scope: global
+    cloud_sync:
+      scratch:
+        enabled: false
+      memory:
+        enabled: false
+    local_user:
+      uid: 11001
+      primary_gid: 11001
+      samba_enabled: true
+    cert:
+      issue: true
+      validity_days: 365
+
+  - name: agent_arc_exec
+    description: "ARC Exec Agent"
+    access:
+      - org: arc
+        grade: 0
+        vertical: any
+        scope: global
+    share_class:
+      org: arc
+      grade: 0
+      vertical: any
+      scope: global
+    cloud_sync:
+      scratch:
+        enabled: true
+        remote: "drive_global:Agent_Test/agent_arc_exec/scratch"
+        schedule: "*:0/1"
+        conflict_policy: newer
+      memory:
+        enabled: false
+    local_user:
+      uid: 12001
+      primary_gid: 12001
+      samba_enabled: true
+    cert:
+      issue: true
+      validity_days: 365
+
+  - name: agent_arc_finance_global
+    description: "ARC UK finance agent"
+    access:
+      - org: arc
+        grade: 4
+        vertical: finance
+        scope: uk
+    share_class:
+      org: arc
+      grade: 4
+      vertical: finance
+      scope: uk
+    local_user:
+      uid: 12002
+      primary_gid: 12002
+      samba_enabled: true
+    cert:
+      issue: true
+      validity_days: 365
+
+  - name: agent_platform_test
+    description: "Platform smoke test (zaphod)"
+    access:
+      - org: arc
+        grade: 4
+        vertical: finance
+        scope: uk
+    share_class:
+      org: arc
+      grade: 4
+      vertical: finance
+      scope: uk
+    local_user:
+      uid: 12099
+      primary_gid: 12099
+      shell: /usr/sbin/nologin
+      create_home: false
+      samba_enabled: false
+    cert:
+      issue: true
+      validity_days: 365
+
+  # ─── agent-compile test agent — carries the `app` block (app-block contract) ───
+  # Omits `host` on purpose: host resolves via org_routing[arc].vector_host.
+
   - name: agent_arc_marketing_bob
-    template: openclaw:marketing_arc:v1
-    image: openclaw:2026.5.5-r1
-    org: arc
-    classification:
+    description: "ARC marketing agent — agent-compile test fixture"
+    access:
+      - org: arc
+        grade: 2
+        vertical: marketing
+        scope: arc
+    share_class:
+      org: arc
+      grade: 2
       vertical: marketing
       scope: arc
-      grade: 2
     local_user:
-      uid: 13042
-      primary_gid: 13042
-      supp_gids: []
-    channels:
-      discord:
-        bot_name: "marketing-bob"
-    host: marten
+      uid: 12050
+      primary_gid: 12050
+      samba_enabled: true
+    cert:
+      issue: true
+      validity_days: 365
+    app:
+      template: openclaw:marketing_arc:v1
+      image: openclaw:2026.5.5-r1
+      channels:
+        discord:
+          bot_name: "marketing-bob"

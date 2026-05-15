@@ -146,8 +146,9 @@ def test_load_agent_registry(cfg):
 
 def test_get_agent(cfg):
     agent = registry_mod.get_agent(cfg, "agent_arc_marketing_bob")
-    assert agent["template"] == "openclaw:marketing_arc:v1"
-    assert agent["image"] == "openclaw:2026.5.5-r1"
+    assert agent["app"]["template"] == "openclaw:marketing_arc:v1"
+    assert agent["app"]["image"] == "openclaw:2026.5.5-r1"
+    assert agent["share_class"]["org"] == "arc"
 
 
 def test_get_agent_missing(cfg):

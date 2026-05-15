@@ -47,7 +47,7 @@ def _build_fetcher_from_compile(cfg) -> FakeFetcher:
     flavour_filename = cfg.flavour("openclaw").config_filename
     flavour_json_text = (art / flavour_filename).read_text(encoding="utf-8")
 
-    host = "marten"
+    host = "otter"  # org_routing[arc].vector_host
     root = f"/mnt/raid/arc/agents/{AGENT}"
     fetcher = FakeFetcher()
     fetcher.files[f"{host}:{root}/configs/main/{flavour_filename}"] = flavour_json_text
@@ -98,7 +98,7 @@ def test_snapshot_with_no_drift_has_minimal_overrides(cfg):
 def test_snapshot_captures_workspace_drift(cfg):
     """A modified SOUL.md on host shows up as a workspace override."""
     fetcher = _build_fetcher_from_compile(cfg)
-    host = "marten"
+    host = "otter"  # org_routing[arc].vector_host
     root = f"/mnt/raid/arc/agents/{AGENT}"
     fetcher.files[f"{host}:{root}/memory/main/workspace/SOUL.md"] = (
         "# Drifted soul\nNew content authored on the agent host.\n"
@@ -117,7 +117,7 @@ def test_snapshot_captures_workspace_drift(cfg):
 def test_snapshot_captures_new_skill(cfg):
     """A skill present on the host but not in the chain should appear in skills.add."""
     fetcher = _build_fetcher_from_compile(cfg)
-    host = "marten"
+    host = "otter"  # org_routing[arc].vector_host
     root = f"/mnt/raid/arc/agents/{AGENT}"
     fetcher.dirs[f"{host}:{root}/memory/main/workspace/skills"] = [
         "social_channel_etiquette",
@@ -192,7 +192,7 @@ def test_snapshot_strips_openclaw_self_managed_fields(cfg):
     not leak into the snapshot template patch — it's a per-host write that openclaw
     re-emits on every config write."""
     fetcher = _build_fetcher_from_compile(cfg)
-    host = "marten"
+    host = "otter"  # org_routing[arc].vector_host
     root = f"/mnt/raid/arc/agents/{AGENT}"
     flavour_filename = cfg.flavour("openclaw").config_filename
     # Mutate `meta.lastTouchedAt` on the "host" side

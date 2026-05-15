@@ -32,10 +32,16 @@ console = Console()
 err = Console(stderr=True)
 
 
-def _load_config(registry_root: Optional[str]) -> config_mod.Config:
+def _load_config(
+    registry_root: Optional[str], org_routing: Optional[str]
+) -> config_mod.Config:
     override = Path(registry_root).expanduser() if registry_root else None
+    routing_override = Path(org_routing).expanduser() if org_routing else None
     try:
-        return config_mod.load(registry_root_override=override)
+        return config_mod.load(
+            registry_root_override=override,
+            org_routing_path_override=routing_override,
+        )
     except (FileNotFoundError, ValueError) as e:
         err.print(f"[red]configuration error:[/red] {e}")
         sys.exit(exit_codes.CONFIG)
@@ -43,6 +49,12 @@ def _load_config(registry_root: Optional[str]) -> config_mod.Config:
 
 @click.group(help="agent-compile — manage agent templates and compile agent instances.")
 @click.option("--registry-root", type=click.Path(), default=None, help="Override the registry root path.")
+@click.option(
+    "--org-routing",
+    type=click.Path(),
+    default=None,
+    help="Override the org_routing.yml path (default: ../inventory/group_vars/all/org_routing.yml relative to the registry root).",
+)
 @click.option("--json", "json_output", is_flag=True, help="Machine-readable output.")
 @click.option("-v", "--verbose", is_flag=True, help="Log subprocess invocations.")
 @click.option("-q", "--quiet", is_flag=True, help="Errors only.")
@@ -51,12 +63,13 @@ def _load_config(registry_root: Optional[str]) -> config_mod.Config:
 def cli(
     ctx: click.Context,
     registry_root: Optional[str],
+    org_routing: Optional[str],
     json_output: bool,
     verbose: bool,
     quiet: bool,
 ) -> None:
     ctx.ensure_object(dict)
-    ctx.obj["config"] = _load_config(registry_root)
+    ctx.obj["config"] = _load_config(registry_root, org_routing)
     ctx.obj["json"] = json_output
     ctx.obj["verbose"] = verbose
     ctx.obj["quiet"] = quiet
