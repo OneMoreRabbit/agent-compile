@@ -122,6 +122,24 @@ def test_compile_no_dprox_block_when_template_lacks_one(cfg):
     assert "dprox" not in fj
 
 
+def test_compile_no_agent_block_when_template_lacks_one(cfg):
+    """agent-compile must not invent a partial `agent` block. If neither the
+    bundle nor the template configures `agent`, the compiled config has no
+    `agent` block — the name reaches openclaw via the AGENT_NAME env var
+    (compose), not the config. Inverse of the dprox-block gate."""
+    from agent_compile import registry as registry_mod
+
+    tpl = registry_mod.load_template(cfg, "openclaw", "marketing_arc", 1)
+    tpl.overrides["openclaw_json"].pop("agent", None)
+    registry_mod.save_template(cfg, tpl, allow_overwrite=True)
+
+    compile_mod.compile_agent(cfg, AGENT)
+    fj = json.loads(
+        (cfg.compiled_agent_path(AGENT) / "openclaw.json").read_text(encoding="utf-8")
+    )
+    assert "agent" not in fj
+
+
 def test_compile_flavour_json_keys_sorted(cfg):
     compile_mod.compile_agent(cfg, AGENT)
     root = cfg.compiled_agent_path(AGENT)

@@ -1,29 +1,5 @@
 {
   "$schema": "openclaw://schema/openclaw.json",
-  "agent": {
-    "model": "stub/stub",
-    "name": ""
-  },
-  "agents": {
-    "defaults": {
-      "sandbox": {
-        "mode": "non-main"
-      },
-      "workspace": "/home/agent/.openclaw/workspace"
-    }
-  },
-  "channels": {
-    "discord": {
-      "allowFrom": [],
-      "dmPolicy": "pairing",
-      "enabled": false,
-      "token": {
-        "id": "DISCORD_BOT_TOKEN",
-        "provider": "default",
-        "source": "env"
-      }
-    }
-  },
   "gateway": {
     "auth": {
       "mode": "token",
@@ -47,9 +23,6 @@
   "meta": {
     "lastTouchedAt": "2026-05-14T13:24:34Z",
     "lastTouchedVersion": "0.1.0"
-  },
-  "models": {
-    "auth": {}
   },
   "wizard": {
     "lastRunAt": "2026-05-14T13:24:34Z",

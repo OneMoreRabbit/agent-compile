@@ -236,10 +236,13 @@ def _warn_if_unconfigured(cfg: Config, template_id) -> None:
         or overrides.get("skills")
     ):
         warnings.warn(
-            f"template {template_id} has empty overrides — it has not been "
-            f"configured and resolves to only the image-defaults baseline, "
-            f"which is not a runnable agent. Run `agent-compile template edit "
-            f"{template_id}`, or fork a configured starter template.",
+            f"template {template_id} has empty overrides — it adds nothing to "
+            f"the image-defaults baseline and boots only a bare openclaw "
+            f"gateway (default model, no persona, no channels, no skills). "
+            f"Configure it with `agent-compile template edit {template_id}` — "
+            f"or boot it, configure interactively via the openclaw CLI, and "
+            f"`template snapshot` the result back — before treating it as a "
+            f"real agent.",
             UnconfiguredTemplateWarning,
         )
 
@@ -253,7 +256,14 @@ def _apply_instance_overrides(
     """Build a delta dict from the agent's registry entry and merge it in."""
     delta: Dict[str, Any] = {}
 
-    delta["agent"] = {"name": agent.get("name", "")}
+    # agent.name — merge ONLY into an `agent` block the template already
+    # configures. agent-compile never creates a bare `agent: {name}` block:
+    # openclaw rejects a name-without-model `agent` block ("Missing config",
+    # exit 78), whereas a config with no `agent` block boots on openclaw's
+    # default model. The container always carries AGENT_NAME in its env
+    # (compose) regardless. Same gate as dprox below.
+    if "agent" in flavour_json:
+        delta["agent"] = {"name": agent.get("name", "")}
 
     reg_channels = agent_entry.app_channels(agent)
     if reg_channels:

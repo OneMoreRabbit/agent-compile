@@ -11,10 +11,16 @@ derived_from:
 
 overrides:
   openclaw_json:
+    # A configured template supplies the `agent` block (incl. a model).
+    # agent-compile merges agent.name in per instance; it never creates a
+    # bare partial `agent` block (openclaw rejects name-without-model).
+    agent:
+      model: anthropic/claude-sonnet-4
     channels:
       discord:
         enabled: true
         dmPolicy: "free"
+        token: { source: env, provider: default, id: DISCORD_BOT_TOKEN }
     # A dprox-using template configures the dprox block (cert paths);
     # agent-compile fills in dprox.endpoint per instance.
     dprox:

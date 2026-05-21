@@ -18,7 +18,7 @@ def test_load_image_defaults(cfg):
     bundle = registry_mod.load_image_defaults(cfg, "openclaw", "2026.5.5-r1")
     assert bundle.flavour == "openclaw"
     assert bundle.image_version == "2026.5.5-r1"
-    assert "agent" in bundle.flavour_json
+    assert "gateway" in bundle.flavour_json
     assert "AGENTS.md" in bundle.workspace
     assert "SOUL.md" in bundle.workspace
     assert "TOOLS.md" in bundle.workspace
