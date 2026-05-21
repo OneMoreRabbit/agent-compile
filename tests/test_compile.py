@@ -52,7 +52,23 @@ def test_compile_flavour_json_has_instance_overrides(cfg):
     fj = json.loads((root / "openclaw.json").read_text(encoding="utf-8"))
     assert fj["agent"]["name"] == AGENT
     assert fj["channels"]["discord"]["bot_name"] == "marketing-bob"
+    # dprox endpoint resolved from .compiled/dprox_endpoints.yml block form
+    # (endpoints.arc.url) per docs/contracts/dprox-endpoints-file-v0_1.md
     assert fj["dprox"]["endpoint"] == "https://dprox.arc.internal:8443"
+
+
+def test_compile_dprox_endpoint_bare_string_form(cfg):
+    """endpoints.<org> may be a bare URL string, not only a {url: ...} block —
+    the reader tolerates both (contract v0.1 compatibility note)."""
+    dprox_path = cfg.dprox_endpoints_path()
+    dprox_path.write_text(
+        'endpoints:\n  arc: "https://bare.dprox.internal:8443"\n', encoding="utf-8"
+    )
+    compile_mod.compile_agent(cfg, AGENT)
+    fj = json.loads(
+        (cfg.compiled_agent_path(AGENT) / "openclaw.json").read_text(encoding="utf-8")
+    )
+    assert fj["dprox"]["endpoint"] == "https://bare.dprox.internal:8443"
 
 
 def test_compile_flavour_json_keys_sorted(cfg):

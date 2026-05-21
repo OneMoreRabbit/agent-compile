@@ -180,7 +180,9 @@ def load(
         ),
         compiled_root=paths.get("compiled_root", ".compiled/agents"),
         skills_library_dir=paths.get("skills_library_dir", "skills"),
-        dprox_endpoints_file=paths.get("dprox_endpoints_file", "dprox_endpoints.yml"),
+        dprox_endpoints_file=paths.get(
+            "dprox_endpoints_file", ".compiled/dprox_endpoints.yml"
+        ),
         org_routing_file=paths.get(
             "org_routing_file", "../inventory/group_vars/all/org_routing.yml"
         ),

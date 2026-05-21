@@ -245,16 +245,30 @@ def _apply_instance_overrides(
 
 
 def _lookup_dprox_endpoint(cfg: Config, org: str) -> Optional[str]:
+    """Resolve an org's dprox endpoint URL from `.compiled/dprox_endpoints.yml`.
+
+    File format: docs/contracts/dprox-endpoints-file-v0_1.md. Each
+    `endpoints.<org>` is either a block with a `url` key (preferred) or a
+    bare URL string (tolerated). Missing file / org → None + warning.
+    """
     path = cfg.dprox_endpoints_path()
     if not path.is_file():
         warnings.warn(
-            f"dprox_endpoints.yml not found at {path}; dprox.endpoint left unresolved"
+            f"dprox_endpoints.yml not found at {path}; dprox.endpoint left "
+            "unresolved (dprox apply playbook produces this file — see "
+            "docs/contracts/dprox-endpoints-file-v0_1.md)"
         )
         return None
     with path.open(encoding="utf-8") as f:
         data = yaml.safe_load(f) or {}
-    endpoints = data.get("endpoints") or {}
-    return endpoints.get(org)
+    entry = (data.get("endpoints") or {}).get(org)
+    if entry is None:
+        return None
+    if isinstance(entry, str):
+        return entry
+    if isinstance(entry, dict):
+        return entry.get("url")
+    return None
 
 
 # --- artifact emission ------------------------------------------------------

@@ -1,3 +1,19 @@
+# TEST FIXTURE — dprox_endpoints.yml
+#
+# Mirrors the file the dprox apply playbook produces at:
+#   ~/registry/.compiled/dprox_endpoints.yml
+# Format contract: docs/contracts/dprox-endpoints-file-v0_1.md
+#
+# conftest copies this into <registry_root>/.compiled/dprox_endpoints.yml
+# (the .compiled/ generated-files location, per dprox-design-spec-v0.2).
+
+meta:
+  version: "0.1"
+  generated_by: dprox-apply
+  generated_at: "2026-05-15T14:30:00Z"
+
 endpoints:
-  arc: "https://dprox.arc.internal:8443"
-  cpf: "https://dprox.cpf.internal:8443"
+  arc:
+    url: "https://dprox.arc.internal:8443"
+  cpf:
+    url: "https://dprox.cpf.internal:8443"

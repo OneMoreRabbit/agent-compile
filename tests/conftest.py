@@ -24,10 +24,17 @@ def fixture_registry(tmp_path: Path) -> Path:
         src = FIXTURE_ROOT / sub
         if src.exists():
             shutil.copytree(src, registry_root / sub)
-    for f in ("agent_registry.yml", "dprox_endpoints.yml", "org_routing.yml"):
+    for f in ("agent_registry.yml", "org_routing.yml"):
         src = FIXTURE_ROOT / f
         if src.exists():
             shutil.copy(src, registry_root / f)
+    # dprox_endpoints.yml is a generated file — it lives under .compiled/,
+    # per docs/contracts/dprox-endpoints-file-v0_1.md.
+    dprox_src = FIXTURE_ROOT / "dprox_endpoints.yml"
+    if dprox_src.exists():
+        compiled_dir = registry_root / ".compiled"
+        compiled_dir.mkdir(exist_ok=True)
+        shutil.copy(dprox_src, compiled_dir / "dprox_endpoints.yml")
     return registry_root
 
 
