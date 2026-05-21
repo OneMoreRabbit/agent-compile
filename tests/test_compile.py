@@ -71,6 +71,23 @@ def test_compile_dprox_endpoint_bare_string_form(cfg):
     assert fj["dprox"]["endpoint"] == "https://bare.dprox.internal:8443"
 
 
+def test_compile_no_dprox_block_when_template_lacks_one(cfg):
+    """agent-compile must NOT invent a dprox block. If neither the bundle nor
+    the template configures dprox, the compiled config has no dprox block —
+    even though dprox_endpoints.yml has an entry for the agent's org."""
+    from agent_compile import registry as registry_mod
+
+    tpl = registry_mod.load_template(cfg, "openclaw", "marketing_arc", 1)
+    tpl.overrides["openclaw_json"].pop("dprox", None)
+    registry_mod.save_template(cfg, tpl, allow_overwrite=True)
+
+    compile_mod.compile_agent(cfg, AGENT)
+    fj = json.loads(
+        (cfg.compiled_agent_path(AGENT) / "openclaw.json").read_text(encoding="utf-8")
+    )
+    assert "dprox" not in fj
+
+
 def test_compile_flavour_json_keys_sorted(cfg):
     compile_mod.compile_agent(cfg, AGENT)
     root = cfg.compiled_agent_path(AGENT)

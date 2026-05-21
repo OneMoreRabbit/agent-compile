@@ -236,10 +236,15 @@ def _apply_instance_overrides(
         if channels:
             delta["channels"] = channels
 
-    org = agent_entry.agent_org(agent)
-    endpoint = _lookup_dprox_endpoint(cfg, org)
-    if endpoint:
-        delta["dprox"] = {"endpoint": endpoint}
+    # Fill dprox.endpoint ONLY when the resolved config already configures
+    # dprox (the template — or bundle — has a `dprox` block). agent-compile
+    # never invents a dprox block: a partial one (endpoint, no cert paths) is
+    # an invalid openclaw config. Build brief: resolve the endpoint "if the
+    # template's openclaw.json refers to it".
+    if "dprox" in flavour_json:
+        endpoint = _lookup_dprox_endpoint(cfg, agent_entry.agent_org(agent))
+        if endpoint:
+            delta["dprox"] = {"endpoint": endpoint}
 
     return merge_mod.merge_json(flavour_json, delta)
 

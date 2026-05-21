@@ -15,6 +15,12 @@ overrides:
       discord:
         enabled: true
         dmPolicy: "free"
+    # A dprox-using template configures the dprox block (cert paths);
+    # agent-compile fills in dprox.endpoint per instance.
+    dprox:
+      ca_cert: /agent/configs/main/tls/ca.crt
+      client_cert: /agent/configs/main/tls/client.crt
+      client_key: /agent/configs/main/tls/client.key
 
   workspace:
     SOUL.md: |
