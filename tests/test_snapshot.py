@@ -147,7 +147,7 @@ def test_snapshot_strips_instance_fields(cfg):
     # Overrides must not carry instance-specific values — those are scrubbed.
     overrides_blob = json.dumps(tpl.overrides)
     assert "agent_arc_marketing_bob" not in overrides_blob
-    assert "dprox.arc.internal" not in overrides_blob
+    assert "dprox-arc.lan" not in overrides_blob
 
 
 # --- failure modes ----------------------------------------------------------

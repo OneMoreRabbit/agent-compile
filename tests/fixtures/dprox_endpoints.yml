@@ -3,17 +3,15 @@
 # Mirrors the file the dprox apply playbook produces at:
 #   ~/registry/.compiled/dprox_endpoints.yml
 # Format contract: docs/contracts/dprox-endpoints-file-v0_1.md
+# Shape matches the platform's qdrant_endpoints.yml convention.
 #
-# conftest copies this into <registry_root>/.compiled/dprox_endpoints.yml
-# (the .compiled/ generated-files location, per dprox-design-spec-v0.2).
+# conftest copies this into <registry_root>/.compiled/dprox_endpoints.yml.
 
-meta:
-  version: "0.1"
-  generated_by: dprox-apply
-  generated_at: "2026-05-15T14:30:00Z"
+# Managed by the dprox apply playbook — do not edit by hand.
+generated_at: "2026-05-15T14:30:00Z"
 
 endpoints:
   arc:
-    url: "https://dprox.arc.internal:8443"
+    url: "https://dprox-arc.lan:8443"
   cpf:
-    url: "https://dprox.cpf.internal:8443"
+    url: "https://dprox-cpf.lan:8443"
