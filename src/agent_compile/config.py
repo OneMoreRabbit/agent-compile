@@ -140,10 +140,10 @@ def load(
     registry_root = (
         registry_root_override
         if registry_root_override is not None
-        else Path(str(registry.get("root", "~/registry"))).expanduser()
+        else Path(str(registry.get("root", "~/ansible/registry"))).expanduser()
     )
     archive_root = Path(
-        str(registry.get("archive_root", "~/registry/.archive"))
+        str(registry.get("archive_root", "~/ansible/registry/.archive"))
     ).expanduser()
 
     flavours: Dict[str, FlavourConfig] = {}

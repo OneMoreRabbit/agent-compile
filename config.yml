@@ -1,6 +1,6 @@
 registry:
-  root: ~/registry
-  archive_root: ~/registry/.archive
+  root: ~/ansible/registry
+  archive_root: ~/ansible/registry/.archive
 
 ghcr:
   org: jobcpf
