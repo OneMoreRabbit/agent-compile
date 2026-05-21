@@ -277,8 +277,12 @@ def template_test_cmd(
     if not result.success:
         err.print(
             f"[red]template test failed[/red] for {template_id} against {image_field} "
-            f"(readyz={result.readyz_status}); container logs in {result.artifact_root.parent}"
+            f"(readyz={result.readyz_status})"
         )
+        if result.container_state:
+            err.print(f"  container: {result.container_state}")
+        if result.log_path:
+            err.print(f"  logs: {result.log_path}")
         sys.exit(exit_codes.TEST_FAILED)
 
     # On green, upsert experimental matrix entry
@@ -521,6 +525,10 @@ def agent_test_cmd(ctx: click.Context, agent_name: str, timeout_seconds: int) ->
             f"[red]agent test failed[/red] for {agent_name} "
             f"(readyz={run_result.readyz_status})"
         )
+        if run_result.container_state:
+            err.print(f"  container: {run_result.container_state}")
+        if run_result.log_path:
+            err.print(f"  logs: {run_result.log_path}")
         sys.exit(exit_codes.TEST_FAILED)
     console.print(
         f"[green]agent test passed[/green]: {agent_name} "

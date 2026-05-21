@@ -38,6 +38,8 @@ class TestRunResult:
     readyz_status: Optional[int]
     artifact_root: Path
     container_logs: str = ""
+    container_state: str = ""              # docker inspect: exit code / status
+    log_path: Optional[Path] = None        # where container.log was written
 
 
 def _free_localhost_port() -> int:
@@ -160,8 +162,11 @@ def _run_container(
     probe_port = _free_localhost_port()
     docker_cli.run(["pull", image_tag], check=False)
 
+    # No --rm: a container that crashes on startup must survive long enough
+    # for `docker logs` / `docker inspect` to capture why. It is removed
+    # explicitly in the teardown below, after diagnostics are saved.
     run_args = [
-        "run", "-d", "--rm",
+        "run", "-d",
         "--name", container_name,
         "-e", "AGENT_NAME=test",
         "-e", f"AGENT_UID={stub_agent['local_user']['uid']}",
@@ -199,14 +204,40 @@ def _run_container(
                 pass
             time.sleep(1)
     finally:
+        diag_dir = artifact_root.parent
         logs = ""
+        container_state = ""
         try:
             lp = docker_cli.run(["logs", container_name], check=False)
             logs = (lp.stdout or "") + (lp.stderr or "")
         except Exception:
             pass
         try:
-            docker_cli.run(["stop", container_name], check=False)
+            insp = docker_cli.run(
+                [
+                    "inspect", "--format",
+                    "exit_code={{.State.ExitCode}} status={{.State.Status}} "
+                    "oom_killed={{.State.OOMKilled}} error={{.State.Error}}",
+                    container_name,
+                ],
+                check=False,
+            )
+            container_state = (insp.stdout or "").strip()
+        except Exception:
+            pass
+        # Persist diagnostics next to the compiled artifacts, so the failure
+        # message's "logs in <dir>" pointer is actually true.
+        try:
+            (diag_dir / "container.log").write_text(logs, encoding="utf-8")
+            if container_state:
+                (diag_dir / "container-state.txt").write_text(
+                    container_state + "\n", encoding="utf-8"
+                )
+        except Exception:
+            pass
+        # Remove the container now that logs + state are captured.
+        try:
+            docker_cli.run(["rm", "-f", container_name], check=False)
         except Exception:
             pass
 
@@ -218,4 +249,6 @@ def _run_container(
         readyz_status=readyz_status,
         artifact_root=artifact_root,
         container_logs=logs,
+        container_state=container_state,
+        log_path=diag_dir / "container.log",
     )
