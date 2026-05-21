@@ -183,14 +183,22 @@ def stub_agent_for_template(
     template_id_str: str,
     image_ref_str: str,
     test_uuid: str,
-    stub_uid: int = 65534,
-    stub_gid: int = 65534,
+    stub_uid: int = 1002,
+    stub_gid: int = 1002,
     org: str = "arc",
     host: str = "otter",
 ) -> Dict[str, Any]:
     """Build an in-memory agent dict (live v0.4 + app-block shape) for ``template test``.
 
-    Stub UID/GID match image-compile's probe (65534/65534 — nobody).
+    Stub UID/GID must be a *free* id in the openclaw-runtime base image — not
+    a pre-existing system account. The image entrypoint provisions the agent
+    identity with ``useradd -u $AGENT_UID -d /home/agent agent`` only when the
+    uid is unused; for a taken uid (e.g. 65534 = ``nobody``) the useradd is
+    silently skipped, no ``/home/agent`` home is registered, and ``gosu`` then
+    hands openclaw a ``$HOME`` (``nobody``'s ``/nonexistent``) that does not
+    hold the entrypoint-relocated ``~/.openclaw/openclaw.json`` — so openclaw
+    exits 78 "Missing config". 1002 is the uid image-compile's 2026.5.5-r1
+    probe booted green with (see openclaw-2026.5.5-r1-probe-report.yml).
     """
     from .identifiers import parse_template_id as _parse_tid
 

@@ -32,8 +32,11 @@ def test_stub_agent_shape():
     )
     assert stub["app"]["template"] == "openclaw:marketing_arc:v1"
     assert stub["app"]["image"] == "openclaw:2026.5.5-r1"
-    assert stub["local_user"]["uid"] == 65534
-    assert stub["local_user"]["primary_gid"] == 65534
+    # Must be a free uid in the openclaw-runtime base image — a pre-existing
+    # account (e.g. 65534/nobody) defeats the entrypoint's identity
+    # provisioning and openclaw exits 78. 1002 = the probe's known-green uid.
+    assert stub["local_user"]["uid"] == 1002
+    assert stub["local_user"]["primary_gid"] == 1002
     assert stub["app"]["channels"] == {}
     assert stub["share_class"]["org"] == "arc"
     assert stub["name"].startswith("test_openclaw_marketing_arc_v1_")
