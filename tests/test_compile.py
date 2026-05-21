@@ -71,6 +71,40 @@ def test_compile_dprox_endpoint_bare_string_form(cfg):
     assert fj["dprox"]["endpoint"] == "https://bare.dprox.internal:8443"
 
 
+def test_compile_warns_on_unconfigured_template(cfg):
+    """A template with entirely empty overrides (e.g. `template new` with no
+    follow-up edit) triggers UnconfiguredTemplateWarning."""
+    from agent_compile import identifiers
+    from agent_compile import template_ops
+
+    template_ops.new_template(
+        cfg,
+        identifiers.TemplateID("openclaw", "blank_tpl", 1),
+        identifiers.ImageDefaultsRef("openclaw", "2026.5.5-r1"),
+    )
+    stub = compile_mod.stub_agent_for_template(
+        template_id_str="openclaw:blank_tpl:v1",
+        image_ref_str="openclaw:2026.5.5-r1",
+        test_uuid="warn0001",
+    )
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        compile_mod.compile_pipeline(cfg, stub, emit_compose=False)
+    assert any(
+        isinstance(x.message, compile_mod.UnconfiguredTemplateWarning) for x in w
+    )
+
+
+def test_compile_no_warning_for_configured_template(cfg):
+    """marketing_arc:v1 has real overrides — no UnconfiguredTemplateWarning."""
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        compile_mod.compile_agent(cfg, AGENT)
+    assert not any(
+        isinstance(x.message, compile_mod.UnconfiguredTemplateWarning) for x in w
+    )
+
+
 def test_compile_no_dprox_block_when_template_lacks_one(cfg):
     """agent-compile must NOT invent a dprox block. If neither the bundle nor
     the template configures dprox, the compiled config has no dprox block —

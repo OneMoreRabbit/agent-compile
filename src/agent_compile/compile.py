@@ -51,6 +51,10 @@ class MatrixExperimentalWarning(UserWarning):
     pass
 
 
+class UnconfiguredTemplateWarning(UserWarning):
+    """The leaf template has entirely empty overrides — not a configured agent."""
+
+
 @dataclass
 class CompileResult:
     agent_name: str
@@ -128,6 +132,8 @@ def compile_pipeline(
                 f"{image_ref.image_version}, {matrix_template_field})",
                 MatrixExperimentalWarning,
             )
+
+    _warn_if_unconfigured(cfg, template_id)
 
     resolved = resolver_mod.resolve(cfg, template_id)
 
@@ -207,6 +213,35 @@ def stub_agent_for_template(
             "channels": {},
         },
     }
+
+
+def _warn_if_unconfigured(cfg: Config, template_id) -> None:
+    """Warn if the leaf template has entirely empty overrides.
+
+    An unconfigured template — typically `template new` with no follow-up
+    `template edit` — resolves to just the image-defaults baseline, which is
+    not a runnable agent (openclaw rejects it at boot). Advisory only;
+    compile still proceeds.
+    """
+    try:
+        tpl = registry_mod.load_template(
+            cfg, template_id.flavour, template_id.name, template_id.version
+        )
+    except registry_mod.RegistryError:
+        return
+    overrides = tpl.overrides or {}
+    if not (
+        overrides.get("openclaw_json")
+        or overrides.get("workspace")
+        or overrides.get("skills")
+    ):
+        warnings.warn(
+            f"template {template_id} has empty overrides — it has not been "
+            f"configured and resolves to only the image-defaults baseline, "
+            f"which is not a runnable agent. Run `agent-compile template edit "
+            f"{template_id}`, or fork a configured starter template.",
+            UnconfiguredTemplateWarning,
+        )
 
 
 # --- instance overrides -----------------------------------------------------
