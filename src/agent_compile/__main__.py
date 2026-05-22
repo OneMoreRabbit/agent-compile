@@ -117,9 +117,13 @@ def agents_list_cmd(ctx: click.Context) -> None:
         console.print("[yellow](no agents in registry)[/yellow]")
         return
     for a in agents:
-        console.print(
-            f"  {a.get('name')} — template={a.get('template')} image={a.get('image')}"
-        )
+        # template/image live under the `app` block in the v0.4 schema.
+        # Agents without an `app` block (not compilable by agent-compile)
+        # show "—".
+        app = a.get("app") or {}
+        template = app.get("template") or "—"
+        image = app.get("image") or "—"
+        console.print(f"  {a.get('name')} — template={template} image={image}")
 
 
 def _not_implemented(verb: str) -> None:
