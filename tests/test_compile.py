@@ -47,6 +47,11 @@ def test_compile_compose_yml_contents(cfg):
     # No env_file: the docker compose CLI cannot read the 0600 secrets.env;
     # the container entrypoint sources it post-gosu instead.
     assert "env_file" not in compose_text
+    # No `user:`: the container must start as root so the openclaw-runtime
+    # entrypoint's root phase can provision identity; it gosu-drops itself.
+    assert "user:" not in compose_text
+    # No `healthcheck:`: the openclaw-runtime image ships a built-in one.
+    assert "healthcheck" not in compose_text
 
 
 def test_compile_compose_template_from_bundle_preferred(cfg):

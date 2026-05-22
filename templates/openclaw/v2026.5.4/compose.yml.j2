@@ -3,7 +3,6 @@ services:
     image: ghcr.io/{{ ghcr_org }}/{{ image_line }}:{{ image_version }}
     container_name: openclaw_{{ agent_name }}
     restart: unless-stopped
-    user: "{{ uid }}:{{ primary_gid }}"
 {% if supp_gids %}
     group_add:
 {% for gid in supp_gids %}
@@ -25,8 +24,3 @@ services:
       - {{ host_root }}/scratch:/agent/scratch:rw
     ports:
       - "127.0.0.1:{{ local_port }}:{{ default_port }}"
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:{{ default_port }}{{ health_endpoint }}"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
