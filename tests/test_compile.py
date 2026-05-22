@@ -44,6 +44,9 @@ def test_compile_compose_yml_contents(cfg):
     assert f"AGENT_NAME: \"{AGENT}\"" in compose_text
     assert f"/mnt/raid/arc/agents/{AGENT}/configs:/agent/configs:rw" in compose_text
     assert "127.0.0.1:" in compose_text  # port mapping rendered
+    # No env_file: the docker compose CLI cannot read the 0600 secrets.env;
+    # the container entrypoint sources it post-gosu instead.
+    assert "env_file" not in compose_text
 
 
 def test_compile_compose_template_from_bundle_preferred(cfg):

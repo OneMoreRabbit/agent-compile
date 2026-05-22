@@ -18,8 +18,6 @@ services:
       AGENT_HOME: "/agent"
       OPENCLAW_BIND: "lan"
       OPENCLAW_PORT: "{{ default_port }}"
-    env_file:
-      - {{ host_root }}/configs/main/secrets.env
     volumes:
       - {{ host_root }}/configs:/agent/configs:rw
       - {{ host_root }}/memory:/agent/memory:rw
