@@ -47,6 +47,42 @@ def _load_config(
         sys.exit(exit_codes.CONFIG)
 
 
+def _git_short_rev() -> Optional[str]:
+    """Short HEAD revision, read straight from ``.git/`` — no subprocess.
+
+    Returns ``None`` when the repo metadata is absent or unreadable (a
+    packaged / non-editable install), so ``--version`` degrades cleanly to
+    the bare ``__version__``.
+    """
+    git_dir = Path(__file__).resolve().parents[2] / ".git"
+    try:
+        head = (git_dir / "HEAD").read_text(encoding="utf-8").strip()
+        if not head.startswith("ref:"):
+            return head[:7] or None  # detached HEAD holds the SHA directly
+        ref = head[4:].strip()
+        ref_file = git_dir / ref
+        if ref_file.is_file():
+            return ref_file.read_text(encoding="utf-8").strip()[:7] or None
+        packed = git_dir / "packed-refs"
+        if packed.is_file():
+            for line in packed.read_text(encoding="utf-8").splitlines():
+                line = line.strip()
+                if line and not line.startswith(("#", "^")):
+                    sha, _, name = line.partition(" ")
+                    if name == ref:
+                        return sha[:7] or None
+        return None
+    except (OSError, ValueError):
+        return None
+
+
+def _display_version() -> str:
+    """``__version__`` with the short git revision appended for an editable
+    checkout (``.git`` present); the bare version otherwise."""
+    rev = _git_short_rev()
+    return f"{__version__} (rev {rev})" if rev else __version__
+
+
 @click.group(help="agent-compile — manage agent templates and compile agent instances.")
 @click.option("--registry-root", type=click.Path(), default=None, help="Override the registry root path.")
 @click.option(
@@ -58,7 +94,7 @@ def _load_config(
 @click.option("--json", "json_output", is_flag=True, help="Machine-readable output.")
 @click.option("-v", "--verbose", is_flag=True, help="Log subprocess invocations.")
 @click.option("-q", "--quiet", is_flag=True, help="Errors only.")
-@click.version_option(version=__version__)
+@click.version_option(version=_display_version())
 @click.pass_context
 def cli(
     ctx: click.Context,

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agent-compile"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Manage agent templates and compile agent instances for the ARC Power platform."
 requires-python = ">=3.11"
 authors = [{name = "ARC Power"}]
@@ -30,6 +30,9 @@ agent-compile = "agent_compile.__main__:cli"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.dynamic]
+version = {attr = "agent_compile.__version__"}
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
