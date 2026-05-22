@@ -111,7 +111,16 @@ def load_image_defaults(
     else:
         warnings.warn(f"probe-report.yml missing from bundle: {bundle_dir}")
 
-    expected_at_root = {flav.config_filename, "metadata.yml", "probe-report.yml"}
+    # compose.yml.j2 is an optional bundle member: image-compile is proposed
+    # to ship it per release (compose-template-in-bundle proposal). It is read
+    # separately by compose._resolve_compose_template_dir, not here — listed so
+    # a bundle that already carries one is not flagged as an unknown file.
+    expected_at_root = {
+        flav.config_filename,
+        "metadata.yml",
+        "probe-report.yml",
+        "compose.yml.j2",
+    }
     for child in bundle_dir.iterdir():
         if child.name in expected_at_root or child.name == "workspace":
             continue

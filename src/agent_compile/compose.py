@@ -33,13 +33,7 @@ def render(
     Side-effect: persists the agent's port allocation under the flavour's
     endpoints file. Re-rendering the same agent reuses the same port.
     """
-    template_dir = cfg.flavour_templates_dir(flavour, image_version)
-    template_path = template_dir / "compose.yml.j2"
-    if not template_path.is_file():
-        raise ComposeError(
-            f"compose template not found for flavour={flavour}, "
-            f"image_version={image_version}: {template_path}"
-        )
+    template_dir = _resolve_compose_template_dir(cfg, flavour, image_version)
 
     try:
         host = paths_mod.resolve_agent_host(cfg, agent)
@@ -75,3 +69,32 @@ def render(
         "health_endpoint": flav_cfg.health_endpoint,
     }
     return tmpl.render(**context)
+
+
+def _resolve_compose_template_dir(
+    cfg: Config, flavour: str, image_version: str
+) -> Path:
+    """Locate the directory that holds ``compose.yml.j2``.
+
+    Resolution order:
+
+    1. The **image-defaults bundle** for this image
+       (``image_defaults/<flavour>/<image_version>/``). image-compile is
+       proposed to ship the compose template there, per release — see
+       ``docs/agent-compile-compose-template-in-bundle-proposal-v0_1.md``.
+       A bundle that predates that proposal simply has no ``compose.yml.j2``
+       and resolution falls through.
+    2. agent-compile's own per-schema tree
+       (``templates/<flavour>/v<schema>/``) — the fallback, and the current
+       home of the template until bundles ship one.
+    """
+    bundle_dir = cfg.image_defaults_path(flavour, image_version)
+    fallback_dir = cfg.flavour_templates_dir(flavour, image_version)
+    for candidate in (bundle_dir, fallback_dir):
+        if (candidate / "compose.yml.j2").is_file():
+            return candidate
+    raise ComposeError(
+        f"compose.yml.j2 not found for flavour={flavour}, "
+        f"image_version={image_version}: looked in the image-defaults "
+        f"bundle ({bundle_dir}) then the per-schema fallback ({fallback_dir})"
+    )

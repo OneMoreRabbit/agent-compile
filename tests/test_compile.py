@@ -46,6 +46,26 @@ def test_compile_compose_yml_contents(cfg):
     assert "127.0.0.1:" in compose_text  # port mapping rendered
 
 
+def test_compile_compose_template_from_bundle_preferred(cfg):
+    """When the image-defaults bundle ships a compose.yml.j2, agent-compile
+    renders from it in preference to its own templates/ tree (the
+    compose-template-in-bundle proposal). The repo template uses the
+    `openclaw_` service-name prefix; this bundle template uses a distinct
+    `bundlemarker_` prefix so the source is unambiguous."""
+    bundle_dir = cfg.image_defaults_path("openclaw", "2026.5.5-r1")
+    (bundle_dir / "compose.yml.j2").write_text(
+        "services:\n"
+        "  bundlemarker_{{ agent_name }}:\n"
+        "    image: ghcr.io/{{ ghcr_org }}/{{ image_line }}:{{ image_version }}\n",
+        encoding="utf-8",
+    )
+    compile_mod.compile_agent(cfg, AGENT)
+    compose_text = (cfg.compiled_agent_path(AGENT) / "compose.yml").read_text(
+        encoding="utf-8"
+    )
+    assert f"bundlemarker_{AGENT}" in compose_text
+
+
 def test_compile_flavour_json_has_instance_overrides(cfg):
     compile_mod.compile_agent(cfg, AGENT)
     root = cfg.compiled_agent_path(AGENT)
