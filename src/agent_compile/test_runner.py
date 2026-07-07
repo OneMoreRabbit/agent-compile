@@ -40,6 +40,8 @@ class TestRunResult:
     container_logs: str = ""
     container_state: str = ""              # docker inspect: exit code / status
     log_path: Optional[Path] = None        # where container.log was written
+    stub_uid: Optional[int] = None         # identity the container ran as
+    stub_gid: Optional[int] = None
 
 
 def _free_localhost_port() -> int:
@@ -251,4 +253,6 @@ def _run_container(
         container_logs=logs,
         container_state=container_state,
         log_path=diag_dir / "container.log",
+        stub_uid=stub_agent["local_user"]["uid"],
+        stub_gid=stub_agent["local_user"]["primary_gid"],
     )

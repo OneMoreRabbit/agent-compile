@@ -25,6 +25,8 @@ class FakeCompleted:
 
 
 def test_stub_agent_shape():
+    import os
+
     stub = compile_mod.stub_agent_for_template(
         template_id_str="openclaw:marketing_arc:v1",
         image_ref_str="openclaw:2026.5.5-r1",
@@ -32,14 +34,29 @@ def test_stub_agent_shape():
     )
     assert stub["app"]["template"] == "openclaw:marketing_arc:v1"
     assert stub["app"]["image"] == "openclaw:2026.5.5-r1"
-    # Must be a free uid in the openclaw-runtime base image — a pre-existing
-    # account (e.g. 65534/nobody) defeats the entrypoint's identity
-    # provisioning and openclaw exits 78. 1002 = the probe's known-green uid.
-    assert stub["local_user"]["uid"] == 1002
-    assert stub["local_user"]["primary_gid"] == 1002
+    # Defaults to the invoking operator's uid/gid (mirrors image-compile's
+    # probe) so the host-created test surfaces are writable by the container;
+    # 1002 fallback where the platform has no getuid (Windows dev machine).
+    # Brief: agent-compile-test-stub-uid v0.1.
+    expected_uid = os.getuid() if hasattr(os, "getuid") else 1002
+    expected_gid = os.getgid() if hasattr(os, "getgid") else 1002
+    assert stub["local_user"]["uid"] == expected_uid
+    assert stub["local_user"]["primary_gid"] == expected_gid
     assert stub["app"]["channels"] == {}
     assert stub["share_class"]["org"] == "arc"
     assert stub["name"].startswith("test_openclaw_marketing_arc_v1_")
+
+
+def test_stub_agent_uid_overridable():
+    stub = compile_mod.stub_agent_for_template(
+        template_id_str="openclaw:marketing_arc:v1",
+        image_ref_str="openclaw:2026.5.5-r1",
+        test_uuid="abc12345",
+        stub_uid=11042,
+        stub_gid=11042,
+    )
+    assert stub["local_user"]["uid"] == 11042
+    assert stub["local_user"]["primary_gid"] == 11042
 
 
 def test_template_test_runs_against_preferred_image(cfg, monkeypatch):

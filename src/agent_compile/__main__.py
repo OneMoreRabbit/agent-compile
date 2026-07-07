@@ -314,6 +314,9 @@ def template_test_cmd(
         sys.exit(exit_codes.TEST_FAILED)
 
     image_field = against_image or "(preferred_image)"
+    console.print(
+        f"[dim]stub agent identity: uid={result.stub_uid} gid={result.stub_gid}[/dim]"
+    )
     if not result.success:
         err.print(
             f"[red]template test failed[/red] for {template_id} against {image_field} "

@@ -183,24 +183,34 @@ def stub_agent_for_template(
     template_id_str: str,
     image_ref_str: str,
     test_uuid: str,
-    stub_uid: int = 1002,
-    stub_gid: int = 1002,
+    stub_uid: Optional[int] = None,
+    stub_gid: Optional[int] = None,
     org: str = "arc",
     host: str = "otter",
 ) -> Dict[str, Any]:
     """Build an in-memory agent dict (live v0.4 + app-block shape) for ``template test``.
 
-    Stub UID/GID must be a *free* id in the openclaw-runtime base image — not
-    a pre-existing system account. The image entrypoint provisions the agent
-    identity with ``useradd -u $AGENT_UID -d /home/agent agent`` only when the
-    uid is unused; for a taken uid (e.g. 65534 = ``nobody``) the useradd is
-    silently skipped, no ``/home/agent`` home is registered, and ``gosu`` then
-    hands openclaw a ``$HOME`` (``nobody``'s ``/nonexistent``) that does not
-    hold the entrypoint-relocated ``~/.openclaw/openclaw.json`` — so openclaw
-    exits 78 "Missing config". 1002 is the uid image-compile's 2026.5.5-r1
-    probe booted green with (see openclaw-2026.5.5-r1-probe-report.yml).
+    Stub UID/GID default to the invoking operator (mirroring image-compile's
+    probe): the test runner creates the host-side test surfaces as the
+    operator with default umask, so a container running as any *other* uid
+    cannot write them and the wrapper's agent-phase ``mkdir`` fails at start
+    (see brief agent-compile-test-stub-uid v0.1). On platforms without
+    ``os.getuid`` (the Windows dev machine; docker uid mapping does not apply
+    there) the fallback is 1002 — the free uid image-compile's 2026.5.5-r1
+    probe booted green with.
+
+    An operator uid that collides with a pre-existing account in the base
+    image (e.g. 1000 = ``node``) skips the entrypoint's ``useradd`` identity
+    provisioning; since wrapper r2 (``OPENCLAW_STATE_DIR``) that is harmless
+    for config/state discovery — see image-compile-uid-collision-response
+    v0.1 — the entrypoint logs a soft warning and boots.
     """
     from .identifiers import parse_template_id as _parse_tid
+
+    if stub_uid is None:
+        stub_uid = os.getuid() if hasattr(os, "getuid") else 1002
+    if stub_gid is None:
+        stub_gid = os.getgid() if hasattr(os, "getgid") else 1002
 
     tid = _parse_tid(template_id_str)
     name = f"test_{tid.flavour}_{tid.name}_v{tid.version}_{test_uuid}"
