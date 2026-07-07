@@ -1,0 +1,26 @@
+services:
+  openclaw_{{ agent_name }}:
+    image: ghcr.io/{{ ghcr_org }}/{{ image_line }}:{{ image_version }}
+    container_name: openclaw_{{ agent_name }}
+    restart: unless-stopped
+{% if supp_gids %}
+    group_add:
+{% for gid in supp_gids %}
+      - "{{ gid }}"
+{% endfor %}
+{% endif %}
+    environment:
+      AGENT_NAME: "{{ agent_name }}"
+      AGENT_UID: "{{ uid }}"
+      AGENT_PRIMARY_GID: "{{ primary_gid }}"
+      AGENT_SUPP_GIDS: "{{ supp_gids_str }}"
+      AGENT_HOME: "/agent"
+      OPENCLAW_BIND: "lan"
+      OPENCLAW_PORT: "{{ default_port }}"
+    volumes:
+      - {{ host_root }}/configs:/agent/configs:rw
+      - {{ host_root }}/memory:/agent/memory:rw
+      - {{ host_root }}/sessions:/agent/sessions:rw
+      - {{ host_root }}/scratch:/agent/scratch:rw
+    ports:
+      - "127.0.0.1:{{ local_port }}:{{ default_port }}"
