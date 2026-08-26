@@ -1,27 +1,24 @@
-# AGENTS.md — Atlas entry hook
+# AGENTS.md — Atlas hook
 
-This repo is the **agent-compile** component of the AgentEco platform, governed by
-**Architecture-Above-Code (AAC)**. Architecture for this repo lives at
-`G:\VSProjects\Atlas-AgentEco\components\agent-compile\` — not in this repo.
-Method spec: `G:\VSProjects\Atlas\AAC-method.md`.
+This repo is the **agent-compile** component of AgentEco, governed by Architecture-Above-Code.
+The architecture lives in the project's Atlas vault — a git repo resolved by
+`scripts/atlas-sync.sh` into `$ATLAS_VAULT` (default `./.atlas`), at the method version
+pinned in the vault's `registry/io-graph.yml`. Never reference the vault by a machine path.
 
-## Before working, every session
+**Before working:** read `ATLAS-CONTEXT.md` — injected by the SessionStart hook on every
+session start (including resume, `/clear`, compaction and fork). Regenerate any time with
+`sh scripts/atlas-context.sh`. **If it is absent, your hooks are not live** — the write
+guard is not running either. Fix the install (`atlas_init --launch-dir`, then `--verify`);
+until then honour the write scope by hand. It is your complete reading list: constitution, pinned
+upstream contracts, consumers' needs, in-flight proposals, drift. Consult the wider vault
+only if the context is insufficient — and treat that as a defect in the vault's
+`registry/io-graph.yml`: fix the graph, don't browse.
 
-1. Read `G:\VSProjects\Atlas-AgentEco\architecture\constitution.md` (global principles).
-2. Resolve this component's edges: `G:\VSProjects\Atlas-AgentEco\registry\io-graph.yml`,
-   or the compiled reading list at
-   `G:\VSProjects\Atlas-AgentEco\registry\.compiled\agent-compile\io-manifest.yml`.
-3. Read each upstream provider's `docs/provides/` at the **pinned** version; note any
-   drift (latest > pinned) — re-pin deliberately, never silently.
-4. Read consumers' `docs/needs/` where `from == agent-compile` (their asks of us).
-5. Skim `G:\VSProjects\Atlas-AgentEco\architecture\proposals\` for in-flight ADRs
-   affecting this component.
+**While working:** you may write only to `components/agent-compile/**`, an additive
+`architecture/proposals/NNNN-*.md`, and edges in `registry/io-graph.yml` that name you.
+A `PreToolUse` guard refuses anything else. That is not an obstacle to route around: if you
+need something owned elsewhere, ask for it in `components/agent-compile/docs/needs/`.
 
-## After doing work
-
-- Publish new/updated contracts to `components/agent-compile/docs/provides/`,
-  asks/feedback to `components/agent-compile/docs/needs/` (versioning per AAC-method §4:
-  PATCH = same file; MINOR/MAJOR = new `…vX_Y.md`, prior version to `archive/`).
-- Shared-architecture changes go through an ADR in `architecture/proposals/` — never
-  edit the constitution or any generated block directly.
-- Bump `updated:` in `components/agent-compile/component.md`.
+**After working:** run `/atlas-publish` (contracts to provides/, asks to needs/, ADRs for
+shared changes, bump `updated:`, recompile as a check, commit authored files only on
+`atlas/agent-compile/<topic>`, open the PR).

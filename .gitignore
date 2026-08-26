@@ -10,3 +10,7 @@ dist/
 build/
 .last-test/
 .last-failed/
+# --- Atlas ---
+.atlas/
+.atlas-method/
+ATLAS-CONTEXT.md
