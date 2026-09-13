@@ -90,7 +90,6 @@ def test_every_compose_template_parameterises_the_namespace(cfg):
 
 REQUIRED_KEYS = [
     ("registry", "root"),
-    ("registry", "archive_root"),
     ("paths", "templates_dir"),
     ("paths", "image_defaults_dir"),
     ("paths", "agent_registry_file"),

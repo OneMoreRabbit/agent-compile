@@ -1,6 +1,5 @@
 registry:
   root: ~/ansible/registry
-  archive_root: ~/ansible/registry/.archive
 
 ghcr:
   org: jobcpf
@@ -22,11 +21,6 @@ paths:
 bless:
   recency_window_days: 30
 
-test_mode:
-  startup_timeout_seconds: 30
-  cleanup_on_success: true
-  cleanup_on_failure: false
-
 snapshot:
   ssh_options:
     - "-o"
@@ -46,6 +40,3 @@ flavours:
     port_range_high: 28999
     instance_fields_list: templates/instance-fields/openclaw.yml
     endpoints_file: openclaw_endpoints.yml
-
-logging:
-  level: INFO

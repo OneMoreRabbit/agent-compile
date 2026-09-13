@@ -31,7 +31,6 @@ class FlavourConfig:
 @dataclass
 class Config:
     registry_root: Path
-    archive_root: Path
     templates_dir: str
     image_defaults_dir: str
     agent_registry_file: str
@@ -162,9 +161,6 @@ def load(
         if registry_root_override is not None
         else Path(str(_required(registry, "root", "registry", config_path))).expanduser()
     )
-    archive_root = Path(
-        str(_required(registry, "archive_root", "registry", config_path))
-    ).expanduser()
 
     flavours: Dict[str, FlavourConfig] = {}
     for fname, block in flavours_raw.items():
@@ -195,7 +191,6 @@ def load(
 
     return Config(
         registry_root=registry_root,
-        archive_root=archive_root,
         templates_dir=_required(paths, "templates_dir", "paths", config_path),
         image_defaults_dir=_required(paths, "image_defaults_dir", "paths", config_path),
         agent_registry_file=_required(paths, "agent_registry_file", "paths", config_path),
