@@ -242,12 +242,14 @@ def snapshot(
     except paths_mod.HostResolutionError as e:
         raise SnapshotError(str(e)) from e
 
-    host_root = paths_mod.agent_host_root(agent)
+    # ADR-0010 §7: configs/ stays on beaver; memory/ is now host-local.
+    beaver_root = paths_mod.agent_beaver_root(agent)
+    local_root = paths_mod.agent_local_root(agent)
     flavour_filename = cfg.flavour(current_tid.flavour).config_filename
 
     try:
         actual_flavour_json = json.loads(
-            fetcher.fetch(host, f"{host_root}/configs/main/{flavour_filename}")
+            fetcher.fetch(host, f"{beaver_root}/configs/main/{flavour_filename}")
         )
     except json.JSONDecodeError as e:
         raise SnapshotError(f"actual {flavour_filename} on host is not valid JSON: {e}") from e
@@ -256,14 +258,14 @@ def snapshot(
     for name in ("AGENTS.md", "SOUL.md", "TOOLS.md"):
         try:
             actual_workspace[name] = fetcher.fetch(
-                host, f"{host_root}/memory/main/workspace/{name}"
+                host, f"{local_root}/memory/main/workspace/{name}"
             )
         except SnapshotError:
             # Missing on the host → ignore (snapshot captures what's there)
             continue
 
     actual_skills = sorted(
-        fetcher.list_dir(host, f"{host_root}/memory/main/workspace/skills")
+        fetcher.list_dir(host, f"{local_root}/memory/main/workspace/skills")
     )
 
     scrub_paths = _load_instance_fields(cfg, current_tid.flavour)

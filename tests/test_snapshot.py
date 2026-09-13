@@ -48,14 +48,18 @@ def _build_fetcher_from_compile(cfg) -> FakeFetcher:
     flavour_json_text = (art / flavour_filename).read_text(encoding="utf-8")
 
     host = "otter"  # org_routing[arc].vector_host
-    root = f"/mnt/raid/arc/agents/{AGENT}"
+    # ADR-0010 §7: two roots, deliberately asymmetric. Spelled as literals
+    # rather than via paths_mod so an unintended change to either shape
+    # fails here instead of agreeing with itself.
+    beaver = f"/mnt/raid/arc/agents/{AGENT}"   # configs/ only
+    local = f"/srv/agents/arc/{AGENT}"         # memory/sessions/scratch, no `agents/`
     fetcher = FakeFetcher()
-    fetcher.files[f"{host}:{root}/configs/main/{flavour_filename}"] = flavour_json_text
+    fetcher.files[f"{host}:{beaver}/configs/main/{flavour_filename}"] = flavour_json_text
     for name in ("AGENTS.md", "SOUL.md", "TOOLS.md"):
         fetcher.files[
-            f"{host}:{root}/memory/main/workspace/{name}"
+            f"{host}:{local}/memory/main/workspace/{name}"
         ] = (art / "workspace" / name).read_text(encoding="utf-8")
-    fetcher.dirs[f"{host}:{root}/memory/main/workspace/skills"] = [
+    fetcher.dirs[f"{host}:{local}/memory/main/workspace/skills"] = [
         d.name for d in (art / "workspace" / "skills").iterdir() if d.is_dir()
     ]
     return fetcher
@@ -99,8 +103,12 @@ def test_snapshot_captures_workspace_drift(cfg):
     """A modified SOUL.md on host shows up as a workspace override."""
     fetcher = _build_fetcher_from_compile(cfg)
     host = "otter"  # org_routing[arc].vector_host
-    root = f"/mnt/raid/arc/agents/{AGENT}"
-    fetcher.files[f"{host}:{root}/memory/main/workspace/SOUL.md"] = (
+    # ADR-0010 §7: two roots, deliberately asymmetric. Spelled as literals
+    # rather than via paths_mod so an unintended change to either shape
+    # fails here instead of agreeing with itself.
+    beaver = f"/mnt/raid/arc/agents/{AGENT}"   # configs/ only
+    local = f"/srv/agents/arc/{AGENT}"         # memory/sessions/scratch, no `agents/`
+    fetcher.files[f"{host}:{local}/memory/main/workspace/SOUL.md"] = (
         "# Drifted soul\nNew content authored on the agent host.\n"
     )
     snapshot_mod.snapshot(
@@ -118,8 +126,12 @@ def test_snapshot_captures_new_skill(cfg):
     """A skill present on the host but not in the chain should appear in skills.add."""
     fetcher = _build_fetcher_from_compile(cfg)
     host = "otter"  # org_routing[arc].vector_host
-    root = f"/mnt/raid/arc/agents/{AGENT}"
-    fetcher.dirs[f"{host}:{root}/memory/main/workspace/skills"] = [
+    # ADR-0010 §7: two roots, deliberately asymmetric. Spelled as literals
+    # rather than via paths_mod so an unintended change to either shape
+    # fails here instead of agreeing with itself.
+    beaver = f"/mnt/raid/arc/agents/{AGENT}"   # configs/ only
+    local = f"/srv/agents/arc/{AGENT}"         # memory/sessions/scratch, no `agents/`
+    fetcher.dirs[f"{host}:{local}/memory/main/workspace/skills"] = [
         "social_channel_etiquette",
         "new_runtime_skill",
     ]
@@ -193,14 +205,18 @@ def test_snapshot_strips_openclaw_self_managed_fields(cfg):
     re-emits on every config write."""
     fetcher = _build_fetcher_from_compile(cfg)
     host = "otter"  # org_routing[arc].vector_host
-    root = f"/mnt/raid/arc/agents/{AGENT}"
+    # ADR-0010 §7: two roots, deliberately asymmetric. Spelled as literals
+    # rather than via paths_mod so an unintended change to either shape
+    # fails here instead of agreeing with itself.
+    beaver = f"/mnt/raid/arc/agents/{AGENT}"   # configs/ only
+    local = f"/srv/agents/arc/{AGENT}"         # memory/sessions/scratch, no `agents/`
     flavour_filename = cfg.flavour("openclaw").config_filename
     # Mutate `meta.lastTouchedAt` on the "host" side
-    actual = json.loads(fetcher.files[f"{host}:{root}/configs/main/{flavour_filename}"])
+    actual = json.loads(fetcher.files[f"{host}:{beaver}/configs/main/{flavour_filename}"])
     actual.setdefault("meta", {})["lastTouchedAt"] = "2030-01-01T00:00:00Z"
     actual["meta"]["lastTouchedVersion"] = "0.99.0"
     actual.setdefault("wizard", {})["lastRunAt"] = "2030-01-01T00:00:00Z"
-    fetcher.files[f"{host}:{root}/configs/main/{flavour_filename}"] = json.dumps(actual)
+    fetcher.files[f"{host}:{beaver}/configs/main/{flavour_filename}"] = json.dumps(actual)
 
     snapshot_mod.snapshot(
         cfg,

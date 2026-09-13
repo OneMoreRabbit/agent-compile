@@ -18,9 +18,9 @@ services:
       OPENCLAW_BIND: "lan"
       OPENCLAW_PORT: "{{ default_port }}"
     volumes:
-      - {{ host_root }}/configs:/agent/configs:rw
-      - {{ host_root }}/memory:/agent/memory:rw
-      - {{ host_root }}/sessions:/agent/sessions:rw
-      - {{ host_root }}/scratch:/agent/scratch:rw
+      - {{ beaver_root }}/configs:/agent/configs:rw
+      - {{ local_root }}/memory:/agent/memory:rw
+      - {{ local_root }}/sessions:/agent/sessions:rw
+      - {{ local_root }}/scratch:/agent/scratch:rw
     ports:
       - "127.0.0.1:{{ local_port }}:{{ default_port }}"

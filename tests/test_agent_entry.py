@@ -80,12 +80,39 @@ def test_host_resolution_fails_without_routing_or_host(cfg, tmp_path):
         paths_mod.resolve_agent_host(cfg, agent)
 
 
-def test_agent_host_root_uses_share_class_org(cfg):
+def test_agent_beaver_root_uses_share_class_org(cfg):
     agent = registry_mod.get_agent(cfg, "agent_arc_marketing_bob")
     assert (
-        paths_mod.agent_host_root(agent)
+        paths_mod.agent_beaver_root(agent)
         == "/mnt/raid/arc/agents/agent_arc_marketing_bob"
     )
+
+
+def test_agent_local_root_uses_share_class_org(cfg):
+    agent = registry_mod.get_agent(cfg, "agent_arc_marketing_bob")
+    assert (
+        paths_mod.agent_local_root(agent)
+        == "/srv/agents/arc/agent_arc_marketing_bob"
+    )
+
+
+def test_the_two_roots_are_asymmetric(cfg):
+    """ADR-0010 §7: the host root has no `agents/` segment, the beaver root does.
+
+    Guarded rather than commented because the wrong answer is *plausible*:
+    swapping only the prefix yields `/srv/agents/arc/agents/<name>`, a
+    well-formed path to nothing on a real machine. §6's reasoning — a failure
+    that succeeds is worse than one that does not — applies directly.
+    """
+    agent = registry_mod.get_agent(cfg, "agent_arc_marketing_bob")
+    beaver = paths_mod.agent_beaver_root(agent)
+    local = paths_mod.agent_local_root(agent)
+
+    assert "/agents/" in beaver
+    assert "/agents/" not in local.removeprefix("/srv/agents")
+    # The specific mistake the asymmetry invites.
+    assert local != beaver.replace("/mnt/raid", "/srv/agents")
+    assert not local.startswith("/srv/agents/arc/agents")
 
 
 def test_load_org_routing(cfg):

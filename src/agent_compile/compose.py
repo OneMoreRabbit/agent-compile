@@ -46,12 +46,20 @@ def render(
     local_user = agent.get("local_user") or {}
     supp_gids: List[int] = list(local_user.get("supp_gids") or [])
 
+    # StrictUndefined is the control, not a nicety (ADR-0010 §7). jinja2's
+    # default Undefined renders as an empty string, so a template still using
+    # the retired `host_root` would emit `/configs:/agent/configs` — an
+    # absolute path to the host root, plausible and wrong, with no error. A
+    # template that missed the rename now fails at render, whether it came
+    # from an image-defaults bundle or this repo's fallback tree, so neither
+    # side has to trust the other's timing.
     env = jinja2.Environment(
         loader=jinja2.FileSystemLoader(str(template_dir)),
         autoescape=False,
         keep_trailing_newline=True,
         trim_blocks=True,
         lstrip_blocks=True,
+        undefined=jinja2.StrictUndefined,
     )
     tmpl = env.get_template("compose.yml.j2")
     context = {
@@ -63,7 +71,9 @@ def render(
         "primary_gid": local_user.get("primary_gid", ""),
         "supp_gids": supp_gids,
         "supp_gids_str": ",".join(str(g) for g in supp_gids),
-        "host_root": paths_mod.agent_host_root(agent),
+        # ADR-0010 §7: two declared roots, not one. `host_root` is retired.
+        "beaver_root": paths_mod.agent_beaver_root(agent),
+        "local_root": paths_mod.agent_local_root(agent),
         "local_port": allocation.local_port,
         "default_port": flav_cfg.default_port,
         "health_endpoint": flav_cfg.health_endpoint,
