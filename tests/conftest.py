@@ -29,7 +29,7 @@ def fixture_registry(tmp_path: Path) -> Path:
         if src.exists():
             shutil.copy(src, registry_root / f)
     # dprox_endpoints.yml is a generated file — it lives under .compiled/,
-    # per docs/contracts/dprox-endpoints-file-v0_1.md.
+    # per .atlas/components/dprox/docs/provides/ (dprox-endpoints-file).
     dprox_src = FIXTURE_ROOT / "dprox_endpoints.yml"
     if dprox_src.exists():
         compiled_dir = registry_root / ".compiled"

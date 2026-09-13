@@ -1,7 +1,7 @@
 """Registry I/O: agent_registry.yml, agent_templates/, image_defaults/.
 
 Read tolerance for image_defaults bundles per
-``../../../docs/contracts/image-defaults-bundle-schema-v0_1.md`` —
+``.atlas/components/agent-image/docs/provides/ (image-defaults-bundle-schema)`` —
 required files error, unknown files warn.
 """
 

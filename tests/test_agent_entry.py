@@ -1,6 +1,6 @@
 """Tests for agent_entry accessors, host resolution, and registry-fixture fidelity.
 
-Contract: docs/contracts/agent-registry-app-block-v0_1.md
+Contract: .atlas/components/agent-compile/docs/provides/ (agent-registry-app-block)
 
 The fixture agent_registry.yml mirrors the live ~/ansible/registry/agent_registry.yml
 v0.4 schema. These tests fail loudly if the fixture (and so the schema agent-compile

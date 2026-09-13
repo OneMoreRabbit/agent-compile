@@ -315,7 +315,7 @@ def _apply_instance_overrides(
 def _lookup_dprox_endpoint(cfg: Config, org: str) -> Optional[str]:
     """Resolve an org's dprox endpoint URL from `.compiled/dprox_endpoints.yml`.
 
-    File format: docs/contracts/dprox-endpoints-file-v0_1.md. Each
+    File format: .atlas/components/dprox/docs/provides/ (dprox-endpoints-file). Each
     `endpoints.<org>` is either a block with a `url` key (preferred) or a
     bare URL string (tolerated). Missing file / org → None + warning.
     """
@@ -324,7 +324,7 @@ def _lookup_dprox_endpoint(cfg: Config, org: str) -> Optional[str]:
         warnings.warn(
             f"dprox_endpoints.yml not found at {path}; dprox.endpoint left "
             "unresolved (dprox apply playbook produces this file — see "
-            "docs/contracts/dprox-endpoints-file-v0_1.md)"
+            ".atlas/components/dprox/docs/provides/ (dprox-endpoints-file))"
         )
         return None
     with path.open(encoding="utf-8") as f:

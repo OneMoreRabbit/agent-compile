@@ -2,7 +2,7 @@
 #
 # Mirrors the file the dprox apply playbook produces at:
 #   ~/registry/.compiled/dprox_endpoints.yml
-# Format contract: docs/contracts/dprox-endpoints-file-v0_1.md
+# Format contract: .atlas/components/dprox/docs/provides/ (dprox-endpoints-file)
 # Shape matches the platform's qdrant_endpoints.yml convention.
 #
 # conftest copies this into <registry_root>/.compiled/dprox_endpoints.yml.

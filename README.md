@@ -2,18 +2,18 @@
 
 Manages versioned agent templates and compiles agent instances into ready-to-deploy artifacts for the ARC Power platform. Standalone Python tool. Companion to `image-compile` (which produces the image-defaults bundles this tool reads as the chain root) and `apply_openclaw_stack` (which consumes this tool's compiled artifacts).
 
-See the build brief at `../integrations/agent-compile-build-brief-v0_1.md` for the implementation spec. See `../docs/agent-compile-development-plan-v0_1.md` for the development plan. Shared contracts with `image-compile` live in `../docs/contracts/`.
+Architecture, contracts and manuals live in the Atlas-AgentEco vault, not in this repo (constitution principle 3). Run `sh scripts/atlas-context.sh` for the session's reading list; the documents themselves are under `.atlas/components/<slug>/docs/`. This repo's own are in `.atlas/components/agent-compile/docs/`.
 
 ## Status
 
-MVP complete + aligned with the live `agent_registry.yml` v0.4 schema. 183 unit tests passing.
+MVP complete + aligned with the live `agent_registry.yml` v0.4 schema. Released **v0.3.0**.
 
 - [x] Pass 1 — scaffolding, identifiers, registry I/O, matrix R/W
 - [x] Pass 2 — chain resolution + merge semantics + template diff
 - [x] Pass 3 — template new/fork/edit + instance compile + compose.yml + port allocation
 - [x] Pass 4 — test mode (Docker runner) + matrix bless + verify
 - [x] Pass 5 — snapshot mode (SSH fetch, JSON merge-patch diff, instance-fields scrub)
-- [x] Registry alignment — reads the live v0.4 schema: `app` block, `share_class.org`, org_routing host fallback. See `../docs/contracts/agent-registry-app-block-v0_1.md`.
+- [x] Registry alignment — reads the live v0.4 schema: `app` block, `share_class.org`, org_routing host fallback. See `.atlas/components/agent-compile/docs/provides/ (agent-registry-app-block)`.
 
 ## Development notes
 
@@ -34,7 +34,7 @@ schema-divergence class of bug (see the app-block contract for the history).
 Template subcommands: `new`, `fork`, `snapshot`, `test`, `bless`, `list`, `diff`, `edit`.
 Instance subcommands: `compile [--all]`, `test`, `verify`, `list`.
 
-See `../integrations/agent-compile-build-brief-v0_1.md` §CLI interface for the full surface.
+The build brief is archived in the vault at `.atlas/components/agent-compile/docs/_triage/agent-compile-build-brief-v0_1.md`; `agent-compile --help` is the current surface.
 
 ## Layout
 
@@ -62,7 +62,7 @@ agent-compile/
 
 ```bash
 python -m venv .venv
-. .venv/Scripts/activate                          # Windows; use .venv/bin/activate on Linux
+. .venv/bin/activate                              # Linux; use .venv/Scripts/activate on Windows
 pip install -e .[dev]
 pytest
 ```

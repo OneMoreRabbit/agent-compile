@@ -81,7 +81,7 @@ def test_compile_flavour_json_has_instance_overrides(cfg):
     assert fj["agent"]["name"] == AGENT
     assert fj["channels"]["discord"]["bot_name"] == "marketing-bob"
     # dprox endpoint resolved from .compiled/dprox_endpoints.yml block form
-    # (endpoints.arc.url) per docs/contracts/dprox-endpoints-file-v0_1.md
+    # (endpoints.arc.url) per .atlas/components/dprox/docs/provides/ (dprox-endpoints-file)
     assert fj["dprox"]["endpoint"] == "https://dprox-arc.lan:8443"
 
 

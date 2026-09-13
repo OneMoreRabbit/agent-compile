@@ -1,6 +1,6 @@
 """Tests for the identifier parser/formatter.
 
-Contract: docs/contracts/identifier-format-v0_1.md
+Contract: .atlas/components/agent-compile/docs/provides/ (identifier-format)
 """
 
 from __future__ import annotations
