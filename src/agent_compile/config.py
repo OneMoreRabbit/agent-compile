@@ -42,7 +42,7 @@ class Config:
     org_routing_file: str
     bless_recency_window_days: int
     repo_root: Path
-    ghcr_org: str = "arcpower"
+    ghcr_org: str
     org_routing_path_override: Optional[Path] = None
     flavours: Dict[str, FlavourConfig] = field(default_factory=dict)
     raw: Dict[str, Any] = field(default_factory=dict)
@@ -167,7 +167,14 @@ def load(
             ) from e
 
     ghcr_block = raw.get("ghcr", {}) or {}
-    ghcr_org = str(ghcr_block.get("org", "arcpower"))
+    ghcr_org = str(ghcr_block.get("org", "") or "").strip()
+    if not ghcr_org:
+        raise ValueError(
+            f"ghcr.org missing from {config_path} — a registry namespace is a declared "
+            "fact, not a default. There is deliberately no fallback: a silent default "
+            "for a cross-component identity is a defect whatever value it holds "
+            "(AgentEco GHCR ruling, 2026-09-13)."
+        )
 
     return Config(
         registry_root=registry_root,
