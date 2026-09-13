@@ -323,8 +323,9 @@ def _lookup_dprox_endpoint(cfg: Config, org: str) -> Optional[str]:
     if not path.is_file():
         warnings.warn(
             f"dprox_endpoints.yml not found at {path}; dprox.endpoint left "
-            "unresolved (dprox apply playbook produces this file — see "
-            ".atlas/components/dprox/docs/provides/ (dprox-endpoints-file))"
+            "unresolved (dprox apply playbook produces this file — see the "
+            "dprox-endpoints-file contract in "
+            ".atlas/components/dprox/docs/provides/)"
         )
         return None
     with path.open(encoding="utf-8") as f:
