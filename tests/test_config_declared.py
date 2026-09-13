@@ -1,4 +1,4 @@
-"""ghcr.org is a declared fact, never a default.
+"""Values that govern behaviour are declared, or the tool fails.
 
 AgentEco GHCR ruling, 2026-09-13: no fallback namespace anywhere in the estate.
 A silent default for a cross-component identity is a defect whatever value it
@@ -76,3 +76,70 @@ def test_every_compose_template_parameterises_the_namespace(cfg):
         str(t) for t in templates if literal.search(t.read_text())
     ]
     assert not offenders, f"compose template hard-codes a namespace: {offenders}"
+
+
+# --- constitution §11, generalised 2026-09-13 -------------------------------
+#
+# Every key below is declared in the shipped config.yml, so each default was
+# dead unless a declaration went missing — which is exactly when it fired and
+# exactly when nobody had chosen it. None qualifies as dprox's legitimate
+# tunable ("a default whose wrong value is visible, or fails safe"): every one
+# produces a plausible, readable, wrong result. `registry.root` is the sharpest
+# — it defaulted to a real production path, so a dropped `registry:` block did
+# not fail, it compiled and emitted against the live tree.
+
+REQUIRED_KEYS = [
+    ("registry", "root"),
+    ("registry", "archive_root"),
+    ("paths", "templates_dir"),
+    ("paths", "image_defaults_dir"),
+    ("paths", "agent_registry_file"),
+    ("paths", "compatibility_matrix_file"),
+    ("paths", "compiled_root"),
+    ("paths", "skills_library_dir"),
+    ("paths", "dprox_endpoints_file"),
+    ("paths", "org_routing_file"),
+    ("bless", "recency_window_days"),
+    ("ghcr", "org"),
+]
+
+
+@pytest.mark.parametrize("section,key", REQUIRED_KEYS, ids=lambda v: str(v))
+def test_absent_key_is_an_error_not_a_default(tmp_path, section, key):
+    """Dropping any declared key fails at load, naming the key and the file."""
+    raw = yaml.safe_load(config_mod._default_config_path().read_text())
+    del raw[section][key]
+    path = tmp_path / "config.yml"
+    path.write_text(yaml.safe_dump(raw))
+
+    with pytest.raises(ValueError) as e:
+        config_mod.load(config_path=path)
+    msg = str(e.value)
+    assert key in msg, f"error does not name the missing key: {msg}"
+    assert str(path) in msg, f"error does not name the config file: {msg}"
+
+
+def test_shipped_config_declares_every_required_key():
+    """The guard above is only meaningful if the real config declares them all."""
+    raw = yaml.safe_load(config_mod._default_config_path().read_text())
+    missing = [
+        f"{sec}.{k}" for sec, k in REQUIRED_KEYS
+        if not (raw.get(sec) or {}).get(k)
+    ]
+    assert not missing, f"config.yml is missing declared keys: {missing}"
+
+
+def test_loader_reintroduces_no_silent_default():
+    """No `.get("key", <literal>)` may creep back into the loader.
+
+    Catches the pattern rather than any particular key, so a future config
+    addition cannot quietly reintroduce §11's defect. Two-arg `.get` with an
+    empty container default is fine — that is a missing *section*, whose keys
+    are then checked individually.
+    """
+    src = Path(config_mod.__file__).read_text()
+    offenders = [
+        m.group(0)
+        for m in re.finditer(r'\.get\(\s*"[^"]+"\s*,\s*(?!\{\}|\[\]|None)\S', src)
+    ]
+    assert not offenders, f"silent default reintroduced in config.py: {offenders}"
