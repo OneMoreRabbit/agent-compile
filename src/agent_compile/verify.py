@@ -11,6 +11,7 @@ from typing import List
 from . import agent_entry
 from . import matrix as matrix_mod
 from . import registry as registry_mod
+from . import resolver as resolver_mod
 from .config import Config
 from .identifiers import IdentifierError, parse_image_ref, parse_template_id
 
@@ -82,10 +83,18 @@ def verify_agent(cfg: Config, agent_name: str) -> VerifyResult:
         "secrets.manifest",
         "cert-request.yml",
         "compose.yml",
-        "workspace/AGENTS.md",
-        "workspace/SOUL.md",
-        "workspace/TOOLS.md",
     }
+    # The workspace set is whatever the chain declares, not a fixed three
+    # (deployment-handover 0.6). Verifying only AGENTS/SOUL/TOOLS would let an
+    # artifact missing a declared HUMANS.md pass — a completeness claim narrower
+    # than the contract it verifies.
+    try:
+        expected_files |= {
+            f"workspace/{name}" for name in resolver_mod.resolve(cfg, template_id).workspace
+        }
+    except Exception as e:
+        result.ok = False
+        result.failures.append(f"cannot resolve template chain to verify workspace: {e}")
     if not artifact_root.is_dir():
         result.ok = False
         result.failures.append(f"compiled artifacts directory missing: {artifact_root}")
