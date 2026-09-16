@@ -4,4 +4,4 @@
 # pyproject.toml reads it via [tool.setuptools.dynamic]; `agent-compile
 # --version` appends the git short-rev for editable checkouts (see
 # __main__._display_version), so every install is traceable between bumps.
-__version__ = "0.7.0"
+__version__ = "0.7.1"
