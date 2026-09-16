@@ -254,8 +254,15 @@ def snapshot(
     except json.JSONDecodeError as e:
         raise SnapshotError(f"actual {flavour_filename} on host is not valid JSON: {e}") from e
 
+    # Fetch back exactly the files the resolved chain declares — which since
+    # deployment-handover 0.6 is any filename an override names, not a fixed
+    # three. Scoped to the chain rather than to a listing of the surface on
+    # purpose: "anything not in the compiled artifact set is agent-owned and
+    # placement never touches them" (workspace-file-ownership-noclobber), so
+    # listing the surface would capture the agent's own MEMORY.md and notes
+    # into a template. The chain declares it; the chain captures it back.
     actual_workspace: Dict[str, str] = {}
-    for name in ("AGENTS.md", "SOUL.md", "TOOLS.md"):
+    for name in sorted(resolved.workspace):
         try:
             actual_workspace[name] = fetcher.fetch(
                 host, f"{local_root}/memory/main/workspace/{name}"

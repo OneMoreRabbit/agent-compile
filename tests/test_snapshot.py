@@ -275,3 +275,69 @@ def test_strip_paths_ignores_missing():
     d = {"agent": {"name": "x"}}
     out = snapshot_mod._strip_paths(d, ["doesnt.exist"])
     assert out == {"agent": {"name": "x"}}
+
+
+def test_snapshot_round_trips_an_arbitrary_workspace_file(cfg):
+    """A file the chain declares is captured back, whatever it is called.
+
+    deployment-handover 0.6: `overrides.workspace` carries arbitrary filenames,
+    so the capture path must follow the chain rather than a fixed three. Before
+    this, `HUMANS.md` deployed and was then invisible to `template snapshot` —
+    a file that goes out and never comes back.
+    """
+    import yaml
+
+    tpl_path = (
+        cfg.registry_root / "agent_templates/openclaw/marketing_arc/v1.yml"
+    )
+    d = yaml.safe_load(tpl_path.read_text())
+    d.setdefault("overrides", {}).setdefault("workspace", {})["HUMANS.md"] = (
+        "# Humans\noriginal\n"
+    )
+    tpl_path.write_text(yaml.safe_dump(d))
+
+    fetcher = _build_fetcher_from_compile(cfg)
+    host = "otter"
+    local = f"/srv/agents/arc/{AGENT}"
+    # the agent edited it on the host
+    fetcher.files[f"{host}:{local}/memory/main/workspace/HUMANS.md"] = (
+        "# Humans\nedited on the host\n"
+    )
+
+    snapshot_mod.snapshot(
+        cfg,
+        agent_name=AGENT,
+        target_template_id_str="openclaw:marketing_arc:v3",
+        fetcher=fetcher,
+    )
+    tpl = registry_mod.load_template(cfg, "openclaw", "marketing_arc", 3)
+    assert "HUMANS.md" in tpl.overrides["workspace"], (
+        "arbitrary workspace file did not round-trip"
+    )
+    assert "edited on the host" in tpl.overrides["workspace"]["HUMANS.md"]
+
+
+def test_snapshot_does_not_capture_agent_owned_files(cfg):
+    """Capture follows the chain, not a listing of the surface.
+
+    `MEMORY.md` and anything outside the compiled artifact set is agent-owned
+    (workspace-file-ownership-noclobber). Widening capture to whatever sits on
+    the surface would pull the agent's own notes into a template.
+    """
+    fetcher = _build_fetcher_from_compile(cfg)
+    host = "otter"
+    local = f"/srv/agents/arc/{AGENT}"
+    fetcher.files[f"{host}:{local}/memory/main/workspace/MEMORY.md"] = (
+        "# Memory\nthe agent's own, not the template's\n"
+    )
+
+    snapshot_mod.snapshot(
+        cfg,
+        agent_name=AGENT,
+        target_template_id_str="openclaw:marketing_arc:v3",
+        fetcher=fetcher,
+    )
+    tpl = registry_mod.load_template(cfg, "openclaw", "marketing_arc", 3)
+    assert "MEMORY.md" not in (tpl.overrides.get("workspace") or {}), (
+        "captured an agent-owned file into the template"
+    )
