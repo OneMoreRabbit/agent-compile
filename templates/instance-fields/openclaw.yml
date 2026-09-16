@@ -1,5 +1,5 @@
 # Snapshot instance-fields scrub list — openclaw flavour
-# Contract: ../../../../docs/contracts/snapshot-instance-fields-openclaw-v0_2.md
+# Contract: .atlas/components/agent-image/docs/provides/ (snapshot-instance-fields-openclaw)
 #
 # Paths listed here are stripped from both actual and expected openclaw.json
 # before snapshot diffs them. Dotted notation; arrays addressed with [*].

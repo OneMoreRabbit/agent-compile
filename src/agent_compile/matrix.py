@@ -1,6 +1,6 @@
 """Compatibility matrix R/W.
 
-Contract: ../../../docs/contracts/compatibility-matrix-entry-schema-v0_1.md
+Contract: .atlas/components/agent-compile/docs/provides/ (compatibility-matrix-entry-schema)
 
 Both image-compile and agent-compile write here. ``ruamel.yaml`` round-trip
 preserves comments and ordering so neither tool churns the other's writes.

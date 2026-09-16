@@ -48,14 +48,18 @@ def _build_fetcher_from_compile(cfg) -> FakeFetcher:
     flavour_json_text = (art / flavour_filename).read_text(encoding="utf-8")
 
     host = "otter"  # org_routing[arc].vector_host
-    root = f"/mnt/raid/arc/agents/{AGENT}"
+    # ADR-0010 §7: two roots, deliberately asymmetric. Spelled as literals
+    # rather than via paths_mod so an unintended change to either shape
+    # fails here instead of agreeing with itself.
+    beaver = f"/mnt/raid/arc/agents/{AGENT}"   # configs/ only
+    local = f"/srv/agents/arc/{AGENT}"         # memory/sessions/scratch, no `agents/`
     fetcher = FakeFetcher()
-    fetcher.files[f"{host}:{root}/configs/main/{flavour_filename}"] = flavour_json_text
+    fetcher.files[f"{host}:{beaver}/configs/main/{flavour_filename}"] = flavour_json_text
     for name in ("AGENTS.md", "SOUL.md", "TOOLS.md"):
         fetcher.files[
-            f"{host}:{root}/memory/main/workspace/{name}"
+            f"{host}:{local}/memory/main/workspace/{name}"
         ] = (art / "workspace" / name).read_text(encoding="utf-8")
-    fetcher.dirs[f"{host}:{root}/memory/main/workspace/skills"] = [
+    fetcher.dirs[f"{host}:{local}/memory/main/workspace/skills"] = [
         d.name for d in (art / "workspace" / "skills").iterdir() if d.is_dir()
     ]
     return fetcher
@@ -99,8 +103,12 @@ def test_snapshot_captures_workspace_drift(cfg):
     """A modified SOUL.md on host shows up as a workspace override."""
     fetcher = _build_fetcher_from_compile(cfg)
     host = "otter"  # org_routing[arc].vector_host
-    root = f"/mnt/raid/arc/agents/{AGENT}"
-    fetcher.files[f"{host}:{root}/memory/main/workspace/SOUL.md"] = (
+    # ADR-0010 §7: two roots, deliberately asymmetric. Spelled as literals
+    # rather than via paths_mod so an unintended change to either shape
+    # fails here instead of agreeing with itself.
+    beaver = f"/mnt/raid/arc/agents/{AGENT}"   # configs/ only
+    local = f"/srv/agents/arc/{AGENT}"         # memory/sessions/scratch, no `agents/`
+    fetcher.files[f"{host}:{local}/memory/main/workspace/SOUL.md"] = (
         "# Drifted soul\nNew content authored on the agent host.\n"
     )
     snapshot_mod.snapshot(
@@ -118,8 +126,12 @@ def test_snapshot_captures_new_skill(cfg):
     """A skill present on the host but not in the chain should appear in skills.add."""
     fetcher = _build_fetcher_from_compile(cfg)
     host = "otter"  # org_routing[arc].vector_host
-    root = f"/mnt/raid/arc/agents/{AGENT}"
-    fetcher.dirs[f"{host}:{root}/memory/main/workspace/skills"] = [
+    # ADR-0010 §7: two roots, deliberately asymmetric. Spelled as literals
+    # rather than via paths_mod so an unintended change to either shape
+    # fails here instead of agreeing with itself.
+    beaver = f"/mnt/raid/arc/agents/{AGENT}"   # configs/ only
+    local = f"/srv/agents/arc/{AGENT}"         # memory/sessions/scratch, no `agents/`
+    fetcher.dirs[f"{host}:{local}/memory/main/workspace/skills"] = [
         "social_channel_etiquette",
         "new_runtime_skill",
     ]
@@ -193,14 +205,18 @@ def test_snapshot_strips_openclaw_self_managed_fields(cfg):
     re-emits on every config write."""
     fetcher = _build_fetcher_from_compile(cfg)
     host = "otter"  # org_routing[arc].vector_host
-    root = f"/mnt/raid/arc/agents/{AGENT}"
+    # ADR-0010 §7: two roots, deliberately asymmetric. Spelled as literals
+    # rather than via paths_mod so an unintended change to either shape
+    # fails here instead of agreeing with itself.
+    beaver = f"/mnt/raid/arc/agents/{AGENT}"   # configs/ only
+    local = f"/srv/agents/arc/{AGENT}"         # memory/sessions/scratch, no `agents/`
     flavour_filename = cfg.flavour("openclaw").config_filename
     # Mutate `meta.lastTouchedAt` on the "host" side
-    actual = json.loads(fetcher.files[f"{host}:{root}/configs/main/{flavour_filename}"])
+    actual = json.loads(fetcher.files[f"{host}:{beaver}/configs/main/{flavour_filename}"])
     actual.setdefault("meta", {})["lastTouchedAt"] = "2030-01-01T00:00:00Z"
     actual["meta"]["lastTouchedVersion"] = "0.99.0"
     actual.setdefault("wizard", {})["lastRunAt"] = "2030-01-01T00:00:00Z"
-    fetcher.files[f"{host}:{root}/configs/main/{flavour_filename}"] = json.dumps(actual)
+    fetcher.files[f"{host}:{beaver}/configs/main/{flavour_filename}"] = json.dumps(actual)
 
     snapshot_mod.snapshot(
         cfg,
@@ -259,3 +275,69 @@ def test_strip_paths_ignores_missing():
     d = {"agent": {"name": "x"}}
     out = snapshot_mod._strip_paths(d, ["doesnt.exist"])
     assert out == {"agent": {"name": "x"}}
+
+
+def test_snapshot_round_trips_an_arbitrary_workspace_file(cfg):
+    """A file the chain declares is captured back, whatever it is called.
+
+    deployment-handover 0.6: `overrides.workspace` carries arbitrary filenames,
+    so the capture path must follow the chain rather than a fixed three. Before
+    this, `HUMANS.md` deployed and was then invisible to `template snapshot` —
+    a file that goes out and never comes back.
+    """
+    import yaml
+
+    tpl_path = (
+        cfg.registry_root / "agent_templates/openclaw/marketing_arc/v1.yml"
+    )
+    d = yaml.safe_load(tpl_path.read_text())
+    d.setdefault("overrides", {}).setdefault("workspace", {})["HUMANS.md"] = (
+        "# Humans\noriginal\n"
+    )
+    tpl_path.write_text(yaml.safe_dump(d))
+
+    fetcher = _build_fetcher_from_compile(cfg)
+    host = "otter"
+    local = f"/srv/agents/arc/{AGENT}"
+    # the agent edited it on the host
+    fetcher.files[f"{host}:{local}/memory/main/workspace/HUMANS.md"] = (
+        "# Humans\nedited on the host\n"
+    )
+
+    snapshot_mod.snapshot(
+        cfg,
+        agent_name=AGENT,
+        target_template_id_str="openclaw:marketing_arc:v3",
+        fetcher=fetcher,
+    )
+    tpl = registry_mod.load_template(cfg, "openclaw", "marketing_arc", 3)
+    assert "HUMANS.md" in tpl.overrides["workspace"], (
+        "arbitrary workspace file did not round-trip"
+    )
+    assert "edited on the host" in tpl.overrides["workspace"]["HUMANS.md"]
+
+
+def test_snapshot_does_not_capture_agent_owned_files(cfg):
+    """Capture follows the chain, not a listing of the surface.
+
+    `MEMORY.md` and anything outside the compiled artifact set is agent-owned
+    (workspace-file-ownership-noclobber). Widening capture to whatever sits on
+    the surface would pull the agent's own notes into a template.
+    """
+    fetcher = _build_fetcher_from_compile(cfg)
+    host = "otter"
+    local = f"/srv/agents/arc/{AGENT}"
+    fetcher.files[f"{host}:{local}/memory/main/workspace/MEMORY.md"] = (
+        "# Memory\nthe agent's own, not the template's\n"
+    )
+
+    snapshot_mod.snapshot(
+        cfg,
+        agent_name=AGENT,
+        target_template_id_str="openclaw:marketing_arc:v3",
+        fetcher=fetcher,
+    )
+    tpl = registry_mod.load_template(cfg, "openclaw", "marketing_arc", 3)
+    assert "MEMORY.md" not in (tpl.overrides.get("workspace") or {}), (
+        "captured an agent-owned file into the template"
+    )

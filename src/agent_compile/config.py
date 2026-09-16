@@ -31,7 +31,6 @@ class FlavourConfig:
 @dataclass
 class Config:
     registry_root: Path
-    archive_root: Path
     templates_dir: str
     image_defaults_dir: str
     agent_registry_file: str
@@ -42,7 +41,7 @@ class Config:
     org_routing_file: str
     bless_recency_window_days: int
     repo_root: Path
-    ghcr_org: str = "arcpower"
+    ghcr_org: str
     org_routing_path_override: Optional[Path] = None
     flavours: Dict[str, FlavourConfig] = field(default_factory=dict)
     raw: Dict[str, Any] = field(default_factory=dict)
@@ -112,6 +111,26 @@ def _default_config_path() -> Path:
     return Path(__file__).resolve().parents[2] / "config.yml"
 
 
+def _required(block: dict, key: str, section: str, config_path: Path) -> Any:
+    """A declared value, or an error. Never a plausible substitute.
+
+    Constitution §11: a value that governs behaviour is declared, or the tool
+    fails at startup. A silent default is a defect regardless of which value it
+    holds — it takes effect with nobody choosing it, and a *plausible* default
+    is worse than an absurd one because it is the kind nobody audits. Every
+    value routed through here produces a readable, wrong result if guessed:
+    a wrong registry root compiles and emits against the wrong tree.
+    """
+    value = block.get(key)
+    if value is None or (isinstance(value, str) and not value.strip()):
+        raise ValueError(
+            f"{section}.{key} missing from {config_path} — it governs behaviour, "
+            "so it is declared or this fails; there is deliberately no fallback "
+            "(constitution §11)."
+        )
+    return value
+
+
 def load(
     config_path: Optional[Path] = None,
     registry_root_override: Optional[Path] = None,
@@ -140,11 +159,8 @@ def load(
     registry_root = (
         registry_root_override
         if registry_root_override is not None
-        else Path(str(registry.get("root", "~/ansible/registry"))).expanduser()
+        else Path(str(_required(registry, "root", "registry", config_path))).expanduser()
     )
-    archive_root = Path(
-        str(registry.get("archive_root", "~/ansible/registry/.archive"))
-    ).expanduser()
 
     flavours: Dict[str, FlavourConfig] = {}
     for fname, block in flavours_raw.items():
@@ -166,27 +182,24 @@ def load(
                 f"flavour {fname!r} in {config_path} missing required key {e.args[0]!r}"
             ) from e
 
+    # A registry namespace is the sharpest case of §11: agent-compile writes it
+    # into every compiled compose.yml and into what `template test` pulls, so an
+    # invented one reaches production without any file being copied or read
+    # (AgentEco GHCR ruling, 2026-09-13).
     ghcr_block = raw.get("ghcr", {}) or {}
-    ghcr_org = str(ghcr_block.get("org", "arcpower"))
+    ghcr_org = str(_required(ghcr_block, "org", "ghcr", config_path)).strip()
 
     return Config(
         registry_root=registry_root,
-        archive_root=archive_root,
-        templates_dir=paths.get("templates_dir", "agent_templates"),
-        image_defaults_dir=paths.get("image_defaults_dir", "image_defaults"),
-        agent_registry_file=paths.get("agent_registry_file", "agent_registry.yml"),
-        compatibility_matrix_file=paths.get(
-            "compatibility_matrix_file", "compatibility_matrix.yml"
-        ),
-        compiled_root=paths.get("compiled_root", ".compiled/agents"),
-        skills_library_dir=paths.get("skills_library_dir", "skills"),
-        dprox_endpoints_file=paths.get(
-            "dprox_endpoints_file", ".compiled/dprox_endpoints.yml"
-        ),
-        org_routing_file=paths.get(
-            "org_routing_file", "../inventory/group_vars/all/org_routing.yml"
-        ),
-        bless_recency_window_days=int(bless.get("recency_window_days", 30)),
+        templates_dir=_required(paths, "templates_dir", "paths", config_path),
+        image_defaults_dir=_required(paths, "image_defaults_dir", "paths", config_path),
+        agent_registry_file=_required(paths, "agent_registry_file", "paths", config_path),
+        compatibility_matrix_file=_required(paths, "compatibility_matrix_file", "paths", config_path),
+        compiled_root=_required(paths, "compiled_root", "paths", config_path),
+        skills_library_dir=_required(paths, "skills_library_dir", "paths", config_path),
+        dprox_endpoints_file=_required(paths, "dprox_endpoints_file", "paths", config_path),
+        org_routing_file=_required(paths, "org_routing_file", "paths", config_path),
+        bless_recency_window_days=int(_required(bless, "recency_window_days", "bless", config_path)),
         repo_root=repo_root,
         ghcr_org=ghcr_org,
         org_routing_path_override=org_routing_path_override,

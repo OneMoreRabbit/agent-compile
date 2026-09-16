@@ -1,6 +1,6 @@
 """Tests for compatibility matrix R/W.
 
-Contract: docs/contracts/compatibility-matrix-entry-schema-v0_1.md
+Contract: .atlas/components/agent-compile/docs/provides/ (compatibility-matrix-entry-schema)
 """
 
 from __future__ import annotations

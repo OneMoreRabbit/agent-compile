@@ -1,6 +1,6 @@
 probe_metadata:
   ran_at: 2026-05-14T10:01:00Z
-  image_tag: ghcr.io/arcpower/openclaw-runtime:2026.5.5-r1
+  image_tag: ghcr.io/jobcpf/openclaw-runtime:2026.5.5-r1
   duration_seconds: 35
   result: success
   healthz:

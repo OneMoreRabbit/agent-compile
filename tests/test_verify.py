@@ -91,3 +91,35 @@ def test_verify_fails_when_image_bundle_missing(cfg):
     result = verify_mod.verify_agent(cfg, AGENT)
     assert not result.ok
     assert any("image_defaults bundle missing" in f for f in result.failures)
+
+
+def test_verify_checks_every_workspace_file_the_chain_declares(cfg):
+    """A declared file missing from the artifact must fail verify.
+
+    deployment-handover 0.6 widened placement to `workspace/*`; verify's
+    completeness claim has to widen with it, or a chain declaring HUMANS.md
+    passes verification with HUMANS.md absent — a narrower claim than the
+    contract being verified.
+    """
+    import yaml
+
+    tpl_path = cfg.registry_root / "agent_templates/openclaw/marketing_arc/v1.yml"
+    d = yaml.safe_load(tpl_path.read_text())
+    d.setdefault("overrides", {}).setdefault("workspace", {})["HUMANS.md"] = (
+        "# Humans\nnotes\n"
+    )
+    tpl_path.write_text(yaml.safe_dump(d))
+
+    _bless_key(cfg)
+    compile_mod.compile_agent(cfg, AGENT, allow_experimental=True)
+    art = cfg.compiled_agent_path(AGENT)
+    assert (art / "workspace" / "HUMANS.md").is_file(), "precondition: compile emits it"
+
+    # Verify is clean while it is present...
+    assert verify_mod.verify_agent(cfg, AGENT).ok
+
+    # ...and must fail once it is gone.
+    (art / "workspace" / "HUMANS.md").unlink()
+    res = verify_mod.verify_agent(cfg, AGENT)
+    assert not res.ok, "verify passed with a declared workspace file missing"
+    assert any("HUMANS.md" in f for f in res.failures), res.failures

@@ -137,6 +137,8 @@ def compile_pipeline(
 
     resolved = resolver_mod.resolve(cfg, template_id)
 
+    _require_init_instruction(resolved, template_id)
+
     flavour_json = _apply_instance_overrides(cfg, resolved.flavour_json, agent)
 
     secret_manifest = secrets_mod.derive_secret_manifest(
@@ -233,6 +235,49 @@ def stub_agent_for_template(
     }
 
 
+INIT_PREFIX = "init/"
+INIT_ANCHOR = "<!-- atlas:init-instruction -->"
+
+
+def _require_init_instruction(resolved, template_id) -> None:
+    """A chain carrying ``init/`` must also tell the agent to read it.
+
+    The operator's requirement is that an agent whose template carries an
+    ``init/`` folder is TOLD it exists. The standing line lives in the
+    image-default ``AGENTS.md`` (agent-image's wording, published with the
+    anchor below) — but a standing line is not a guarantee: placement is
+    place-if-absent, so existing agents never receive it, and
+    ``overrides.workspace`` replaces whole files, so any template supplying its
+    own ``AGENTS.md`` silently drops it. That is precisely the author most
+    likely to be writing an ``init/`` folder.
+
+    A default that can be silently dropped by the person most likely to drop it
+    is a reminder, not a mechanism. So this gate inspects the very override that
+    would defeat it, and fails the compile closed.
+
+    Matches the ANCHOR, never the prose: the wording belongs to agent-image and
+    must stay editable without breaking this check.
+    """
+    init_files = sorted(
+        name for name in resolved.workspace if name.startswith(INIT_PREFIX)
+    )
+    if not init_files:
+        return
+    # No "missing AGENTS.md" branch: the image-defaults bundle REQUIRES it
+    # (registry.py raises if absent), and an override can only replace a file,
+    # never delete one. A guard for a case the chain root forbids would imply a
+    # state that cannot exist.
+    if INIT_ANCHOR not in resolved.workspace["AGENTS.md"]:
+        raise CompileError(
+            f"template chain {template_id} declares {len(init_files)} init/ file(s) "
+            f"({', '.join(init_files)}) but the resolved AGENTS.md does not carry the "
+            f"init instruction anchor {INIT_ANCHOR!r}, so the agent would be given the "
+            "files and never told to read them. Either drop the init/ override or "
+            "restore the instruction (the image-default AGENTS.md carries it; a "
+            "workspace override of AGENTS.md replaces it wholesale)."
+        )
+
+
 def _warn_if_unconfigured(cfg: Config, template_id) -> None:
     """Warn if the leaf template has entirely empty overrides.
 
@@ -315,7 +360,7 @@ def _apply_instance_overrides(
 def _lookup_dprox_endpoint(cfg: Config, org: str) -> Optional[str]:
     """Resolve an org's dprox endpoint URL from `.compiled/dprox_endpoints.yml`.
 
-    File format: docs/contracts/dprox-endpoints-file-v0_1.md. Each
+    File format: .atlas/components/dprox/docs/provides/ (dprox-endpoints-file). Each
     `endpoints.<org>` is either a block with a `url` key (preferred) or a
     bare URL string (tolerated). Missing file / org → None + warning.
     """
@@ -323,8 +368,9 @@ def _lookup_dprox_endpoint(cfg: Config, org: str) -> Optional[str]:
     if not path.is_file():
         warnings.warn(
             f"dprox_endpoints.yml not found at {path}; dprox.endpoint left "
-            "unresolved (dprox apply playbook produces this file — see "
-            "docs/contracts/dprox-endpoints-file-v0_1.md)"
+            "unresolved (dprox apply playbook produces this file — see the "
+            "dprox-endpoints-file contract in "
+            ".atlas/components/dprox/docs/provides/)"
         )
         return None
     with path.open(encoding="utf-8") as f:

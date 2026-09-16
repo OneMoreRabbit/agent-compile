@@ -10,6 +10,7 @@ import pytest
 import yaml
 
 from agent_compile import compile as compile_mod
+from agent_compile import registry as registry_mod
 from agent_compile import matrix as matrix_mod
 
 
@@ -81,7 +82,7 @@ def test_compile_flavour_json_has_instance_overrides(cfg):
     assert fj["agent"]["name"] == AGENT
     assert fj["channels"]["discord"]["bot_name"] == "marketing-bob"
     # dprox endpoint resolved from .compiled/dprox_endpoints.yml block form
-    # (endpoints.arc.url) per docs/contracts/dprox-endpoints-file-v0_1.md
+    # (endpoints.arc.url) per .atlas/components/dprox/docs/provides/ (dprox-endpoints-file)
     assert fj["dprox"]["endpoint"] == "https://dprox-arc.lan:8443"
 
 
@@ -326,3 +327,66 @@ def test_compile_missing_skill_body_fails(cfg):
     skill_path.unlink()
     with pytest.raises(compile_mod.CompileError, match="skill body not found"):
         compile_mod.compile_agent(cfg, AGENT)
+
+
+# --- init/ briefing gate (operator-directed; agent-compile-init-folder-brief) ---
+
+INIT_ANCHOR = "<!-- atlas:init-instruction -->"
+
+
+def _declare(cfg, workspace: dict):
+    """Put workspace overrides on the template the test agent resolves."""
+    import yaml
+
+    tp = cfg.registry_root / "agent_templates/openclaw/marketing_arc/v1.yml"
+    d = yaml.safe_load(tp.read_text())
+    d.setdefault("overrides", {}).setdefault("workspace", {}).update(workspace)
+    tp.write_text(yaml.safe_dump(d))
+
+
+def test_init_files_without_the_instruction_fail_the_compile(cfg):
+    """A chain that ships init/ and no instruction would brief nobody."""
+    _declare(cfg, {
+        "init/role.md": "# Role\n",
+        "AGENTS.md": "# Agents\nA template author's own, without the anchor.\n",
+    })
+    with pytest.raises(compile_mod.CompileError) as e:
+        compile_mod.compile_agent(cfg, AGENT, allow_experimental=True)
+    msg = str(e.value)
+    assert "init/role.md" in msg
+    assert INIT_ANCHOR in msg, "the error must name the anchor the author needs"
+
+
+def test_init_files_with_the_instruction_compile(cfg):
+    """The anchor is what is matched — not the wording around it."""
+    _declare(cfg, {
+        "init/role.md": "# Role\n",
+        "AGENTS.md": (
+            "# Agents\nEntirely different prose, rewritten by agent-image.\n"
+            f"{INIT_ANCHOR}\n"
+        ),
+    })
+    compile_mod.compile_agent(cfg, AGENT, allow_experimental=True)
+    art = cfg.compiled_agent_path(AGENT)
+    assert (art / "workspace" / "init" / "role.md").is_file()
+
+
+def test_the_gate_only_fires_for_init_files(cfg):
+    """An arbitrary workspace file is not an init/ file and needs no instruction."""
+    _declare(cfg, {"HUMANS.md": "# Humans\n"})
+    compile_mod.compile_agent(cfg, AGENT, allow_experimental=True)
+    assert (cfg.compiled_agent_path(AGENT) / "workspace" / "HUMANS.md").is_file()
+
+
+def test_the_bundle_guarantees_agents_md_exists(cfg):
+    """Why the gate has no missing-AGENTS.md branch.
+
+    The chain root is the image-defaults bundle, which requires AGENTS.md
+    (registry.RegistryError otherwise), and an override replaces a file rather
+    than deleting one. So `resolved.workspace["AGENTS.md"]` cannot KeyError.
+    If that invariant ever moves, this fails and the gate needs the branch back.
+    """
+    bundle = cfg.image_defaults_path("openclaw", "2026.5.5-r1") / "workspace" / "AGENTS.md"
+    bundle.unlink()
+    with pytest.raises(registry_mod.RegistryError, match="missing required workspace file"):
+        compile_mod.compile_agent(cfg, AGENT, allow_experimental=True)

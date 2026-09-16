@@ -1,6 +1,6 @@
 """Typed accessors for ``agent_registry.yml`` entries (v0.4 schema + app block).
 
-Contract: ../../../docs/contracts/agent-registry-app-block-v0_1.md
+Contract: .atlas/components/agent-compile/docs/provides/ (agent-registry-app-block)
 
 agent-compile reads only: ``name``, ``share_class.org``, ``local_user``,
 ``cert``, ``host``, and the ``app`` block. Everything else in an entry
