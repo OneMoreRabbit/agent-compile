@@ -142,3 +142,47 @@ def test_two_field_always_image_ref():
     """A two-field identifier is always an image ref, never a partial template ID."""
     ref = parse("openclaw:2026.5.5-r1")
     assert isinstance(ref, ImageRef)
+
+
+# --- rev widening (identifier-format 0.4) -----------------------------------
+#
+# The estate builds and blesses dotted revs — r8.1 is a patch of r8 — and 0.3's
+# "r + positive integer" refused images that already existed and were
+# pull-verified. Renaming them would have forged an identity.
+
+@pytest.mark.parametrize(
+    "image_version",
+    ["2026.5.5-r1", "2026.6.35-r8.1", "2026.6.11-r8.1", "2026.6.35-r8.1.2",
+     "2026.6.35-r8.0"],
+)
+def test_dotted_revs_are_accepted(image_version):
+    ref = parse_image_ref(f"openclaw:{image_version}")
+    assert ref.image_version == image_version
+
+
+@pytest.mark.parametrize(
+    "bad",
+    ["2026.5.5-r0",     # rev starts at 1
+     "2026.5.5-r",      # no rev
+     "2026.5.5-r1.",    # trailing dot
+     "2026.5.5-r.1",    # leading dot
+     "2026.5.5-r01",    # leading zero
+     "2026.5.5-r8.01",  # leading zero in a later component
+     "2026.5.5-r8..1"], # empty component
+)
+def test_malformed_revs_are_still_rejected(bad):
+    with pytest.raises(IdentifierError):
+        parse_image_ref(f"openclaw:{bad}")
+
+
+def test_a_dotted_rev_still_derives_the_schema_dir():
+    """`rsplit('-r', 1)` must not be confused by dots inside the rev.
+
+    The schema dir comes from stripping the rev; a dotted rev that split wrongly
+    would send the compose template lookup to a directory that does not exist.
+    """
+    from agent_compile import config as config_mod
+
+    cfg = config_mod.load()
+    assert cfg.flavour_templates_dir("openclaw", "2026.6.35-r8.1").name == "v2026.6.35"
+    assert cfg.image_defaults_path("openclaw", "2026.6.35-r8.1").name == "2026.6.35-r8.1"

@@ -6,7 +6,7 @@ Architecture, contracts and manuals live in the Atlas-AgentEco vault, not in thi
 
 ## Status
 
-MVP complete + aligned with the live `agent_registry.yml` v0.4 schema. Released **v0.3.0**.
+MVP complete + aligned with the live `agent_registry.yml` v0.4 schema. Released **v0.7.0**.
 
 - [x] Pass 1 — scaffolding, identifiers, registry I/O, matrix R/W
 - [x] Pass 2 — chain resolution + merge semantics + template diff

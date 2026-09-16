@@ -12,7 +12,14 @@ from typing import Union
 _FLAVOUR_RE = re.compile(r"^[a-z][a-z0-9_]*$")
 _NAME_RE = re.compile(r"^[a-z][a-z0-9_]*$")
 _VERSION_RE = re.compile(r"^v([1-9][0-9]*)$")
-_IMAGE_VERSION_RE = re.compile(r"^[0-9][0-9a-z.\-]*-r([1-9][0-9]*)$")
+# Rev is `r` followed by one or more dot-separated integers: r8, r8.1, r8.1.2.
+# Widened from a single integer at identifier-format 0.4 — the estate builds and
+# blesses dotted revs (a patch of a rev, e.g. r8.1 patching r8), and the format
+# was the only thing objecting to images that already exist and are pull-verified.
+# No leading zeros in any component; the first component is >= 1.
+_IMAGE_VERSION_RE = re.compile(
+    r"^[0-9][0-9a-z.\-]*-r([1-9][0-9]*(?:\.(?:0|[1-9][0-9]*))*)$"
+)
 
 _RESERVED_NAMES = {"image_defaults"}
 
@@ -76,7 +83,8 @@ def _validate_version(s: str) -> int:
 def _validate_image_version(s: str) -> str:
     if not _IMAGE_VERSION_RE.match(s):
         raise IdentifierError(
-            f"invalid image_version: {s!r} (expected <upstream>-r<rev>)"
+            f"invalid image_version: {s!r} (expected <upstream>-r<rev>, "
+            "rev being dot-separated integers such as r8 or r8.1)"
         )
     return s
 
