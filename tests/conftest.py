@@ -30,11 +30,16 @@ def fixture_registry(tmp_path: Path) -> Path:
             shutil.copy(src, registry_root / f)
     # dprox_endpoints.yml is a generated file — it lives under .compiled/,
     # per .atlas/components/dprox/docs/provides/ (dprox-endpoints-file).
-    dprox_src = FIXTURE_ROOT / "dprox_endpoints.yml"
-    if dprox_src.exists():
-        compiled_dir = registry_root / ".compiled"
-        compiled_dir.mkdir(exist_ok=True)
-        shutil.copy(dprox_src, compiled_dir / "dprox_endpoints.yml")
+    # Generated files that live under .compiled/: dprox_endpoints.yml (dprox
+    # apply), compiled_plan.yml (rbac-compile) and group_gid_map.yml
+    # (ansible-platform, written on assign). agent-compile reads all three;
+    # none is hand-authored in the real registry.
+    compiled_dir = registry_root / ".compiled"
+    compiled_dir.mkdir(exist_ok=True)
+    for generated in ("dprox_endpoints.yml", "compiled_plan.yml", "group_gid_map.yml"):
+        src = FIXTURE_ROOT / generated
+        if src.exists():
+            shutil.copy(src, compiled_dir / generated)
     return registry_root
 
 

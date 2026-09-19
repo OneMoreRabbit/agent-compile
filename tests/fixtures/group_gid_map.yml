@@ -1,0 +1,7 @@
+# Fixture excerpt of group_gid_map.yml — written ON ASSIGN by
+# ansible-platform's export_group_gids.yml. agent-compile reads names -> gids.
+# Contract pending (ADR-0013 R6); this mirrors the shape in use.
+arc_g0_any_global: 15000
+arc_g2_marketing_global: 15002
+arc_g4_finance_uk: 15004
+cpf_g0_any_global: 15100

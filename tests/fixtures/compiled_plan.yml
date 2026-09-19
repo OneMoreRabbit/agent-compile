@@ -1,0 +1,27 @@
+# Fixture excerpt of rbac-compile's compiled_plan.yml (compiled-rbac-plan 0.7).
+# agent-compile reads ONLY agent_users[].groups — names, never numbers.
+# Mirrors the live shape; re-copy from the real plan when its schema changes.
+meta:
+  compiler_version: "0.7.0"
+  schema_version: "0.7"
+required_groups:
+  - arc_g0_any_global
+  - arc_g2_marketing_global
+  - arc_g4_finance_uk
+  - cpf_g0_any_global
+agent_users:
+  - name: agent_oversight
+    description: top-level oversight agent
+    groups: [arc_g0_any_global, cpf_g0_any_global]
+  - name: agent_arc_exec
+    description: arc exec agent
+    groups: [arc_g0_any_global]
+  - name: agent_arc_finance_global
+    description: arc finance agent
+    groups: [arc_g4_finance_uk]
+  - name: agent_platform_test
+    description: platform test agent
+    groups: []
+  - name: agent_arc_marketing_bob
+    description: arc marketing agent
+    groups: [arc_g2_marketing_global, arc_g0_any_global]

@@ -38,6 +38,8 @@ class Config:
     compiled_root: str
     skills_library_dir: str
     dprox_endpoints_file: str
+    compiled_plan_file: str
+    group_gid_map_file: str
     org_routing_file: str
     bless_recency_window_days: int
     repo_root: Path
@@ -69,6 +71,12 @@ class Config:
 
     def dprox_endpoints_path(self) -> Path:
         return self.registry_root / self.dprox_endpoints_file
+
+    def compiled_plan_path(self) -> Path:
+        return self.registry_root / self.compiled_plan_file
+
+    def group_gid_map_path(self) -> Path:
+        return self.registry_root / self.group_gid_map_file
 
     def org_routing_path(self) -> Path:
         """Path to ``org_routing.yml``.
@@ -198,6 +206,8 @@ def load(
         compiled_root=_required(paths, "compiled_root", "paths", config_path),
         skills_library_dir=_required(paths, "skills_library_dir", "paths", config_path),
         dprox_endpoints_file=_required(paths, "dprox_endpoints_file", "paths", config_path),
+        compiled_plan_file=_required(paths, "compiled_plan_file", "paths", config_path),
+        group_gid_map_file=_required(paths, "group_gid_map_file", "paths", config_path),
         org_routing_file=_required(paths, "org_routing_file", "paths", config_path),
         bless_recency_window_days=int(_required(bless, "recency_window_days", "bless", config_path)),
         repo_root=repo_root,
