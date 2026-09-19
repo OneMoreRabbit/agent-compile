@@ -85,7 +85,21 @@ def test_a_partial_set_is_never_emitted(cfg):
 # --- absence 3: the plan says zero groups — the ONLY legitimate empty --------
 
 def test_zero_groups_in_the_plan_emits_empty(cfg):
-    """Empty is now a statement the plan makes, not residue of a missing key."""
+    """Empty is now a statement the plan makes, not residue of a missing key.
+
+    REACHABILITY UNDER REVIEW (2026-09-19). The orchestrator could not build an
+    agent with zero groups: rbac-compile derives the `share_class` group
+    unconditionally, so `agent_users[].groups` may never be empty in practice.
+    Routed to rbac-compile to confirm structurally; if they confirm, it becomes
+    a stated guarantee in `compiled-rbac-plan` and this test guards a path the
+    producer's contract makes unreachable.
+
+    Kept either way, and labelled either way. An unlabelled test whose subject
+    cannot occur is read by the next person as live coverage, or deleted as
+    dead — and both readings are wrong. If the guarantee lands, this becomes
+    the assertion that the guarantee is what makes the branch unnecessary,
+    rather than the branch being wrong.
+    """
     _edit(cfg.compiled_plan_path(),
           lambda d: next(e for e in d["agent_users"] if e["name"] == AGENT)
           .__setitem__("groups", []))
