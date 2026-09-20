@@ -30,6 +30,7 @@ RENDER_CONTEXT = {
     "beaver_root": "/mnt/raid/arc/agents/tpl_shape_check",
     "local_root": "/srv/agents/arc/tpl_shape_check",
     "local_port": 18000,
+    "ssh_port": None,          # ADR-0013 D6: absent grant -> no published ssh port
     "default_port": 8000,
     "health_endpoint": "/healthz",
 }

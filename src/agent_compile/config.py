@@ -24,6 +24,8 @@ class FlavourConfig:
     default_port: int
     port_range_low: int
     port_range_high: int
+    ssh_port_range_low: int
+    ssh_port_range_high: int
     instance_fields_list: str
     endpoints_file: str
 
@@ -182,6 +184,8 @@ def load(
                 default_port=int(block["default_port"]),
                 port_range_low=int(block["port_range_low"]),
                 port_range_high=int(block["port_range_high"]),
+                ssh_port_range_low=int(block["ssh_port_range_low"]),
+                ssh_port_range_high=int(block["ssh_port_range_high"]),
                 instance_fields_list=block["instance_fields_list"],
                 endpoints_file=block["endpoints_file"],
             )
@@ -189,6 +193,25 @@ def load(
             raise ValueError(
                 f"flavour {fname!r} in {config_path} missing required key {e.args[0]!r}"
             ) from e
+
+    for fname, fc in flavours.items():
+        # Two ranges on one host must not overlap: an ssh port colliding with a
+        # gateway port would publish one agent's shell where another's gateway
+        # is expected. Fail closed at load — cheap, and the alternative is a
+        # collision discovered by a deploy.
+        if (fc.ssh_port_range_low <= fc.port_range_high
+                and fc.port_range_low <= fc.ssh_port_range_high):
+            raise ValueError(
+                f"flavour {fname!r} in {config_path}: ssh_port_range "
+                f"{fc.ssh_port_range_low}-{fc.ssh_port_range_high} overlaps "
+                f"port_range {fc.port_range_low}-{fc.port_range_high}"
+            )
+        if fc.ssh_port_range_low > fc.ssh_port_range_high:
+            raise ValueError(
+                f"flavour {fname!r} in {config_path}: ssh_port_range_low "
+                f"{fc.ssh_port_range_low} exceeds ssh_port_range_high "
+                f"{fc.ssh_port_range_high}"
+            )
 
     # A registry namespace is the sharpest case of §11: agent-compile writes it
     # into every compiled compose.yml and into what `template test` pulls, so an

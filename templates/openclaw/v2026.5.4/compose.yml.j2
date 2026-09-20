@@ -24,3 +24,6 @@ services:
       - {{ local_root }}/scratch:/agent/scratch:rw
     ports:
       - "127.0.0.1:{{ local_port }}:{{ default_port }}"
+{% if ssh_port %}
+      - "127.0.0.1:{{ ssh_port }}:22"
+{% endif %}

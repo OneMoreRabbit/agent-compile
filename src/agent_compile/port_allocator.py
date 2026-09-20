@@ -108,10 +108,48 @@ def allocate(
     agent_name: str,
     host: str,
 ) -> Allocation:
-    """Allocate (or reuse) a port for ``agent_name`` on ``host``.
+    """Allocate (or reuse) the GATEWAY port for ``agent_name`` on ``host``."""
+    flav = cfg.flavour(flavour)
+    return _allocate_in_range(
+        cfg, flavour, agent_name, host,
+        field="local_port",
+        low=flav.port_range_low, high=flav.port_range_high,
+    )
 
-    Locks the flavour's endpoints file for the duration of read-decide-write.
+
+def allocate_ssh(
+    cfg: Config,
+    flavour: str,
+    agent_name: str,
+    host: str,
+) -> Allocation:
+    """Allocate (or reuse) the SSH port for ``agent_name`` on ``host``.
+
+    ADR-0013 D6. Same mechanism as the gateway port, deliberately: a port
+    number is not a registry fact — nobody cares which one, only that it is
+    free — so it is derived, not hand-kept. Stored as a second field on the
+    same record, under the same lock, from a range validated not to overlap
+    the gateway's.
     """
+    flav = cfg.flavour(flavour)
+    return _allocate_in_range(
+        cfg, flavour, agent_name, host,
+        field="ssh_port",
+        low=flav.ssh_port_range_low, high=flav.ssh_port_range_high,
+    )
+
+
+def _allocate_in_range(
+    cfg: Config,
+    flavour: str,
+    agent_name: str,
+    host: str,
+    *,
+    field: str,
+    low: int,
+    high: int,
+) -> Allocation:
+    """Allocate (or reuse) one port field. Locks for read-decide-write."""
     flav = cfg.flavour(flavour)
     path = cfg.flavour_endpoints_path(flavour)
     with _file_lock(path):
@@ -121,35 +159,34 @@ def allocate(
         existing = agents.get(agent_name) or {}
         if (
             existing.get("host") == host
-            and isinstance(existing.get("local_port"), int)
-            and flav.port_range_low
-            <= existing["local_port"]
-            <= flav.port_range_high
+            and isinstance(existing.get(field), int)
+            and low <= existing[field] <= high
         ):
-            return Allocation(host=host, local_port=int(existing["local_port"]))
+            return Allocation(host=host, local_port=int(existing[field]))
 
         occupied = {
-            int(entry["local_port"])
+            int(entry[field])
             for name, entry in agents.items()
             if name != agent_name
             and isinstance(entry, dict)
             and entry.get("host") == host
-            and isinstance(entry.get("local_port"), int)
+            and isinstance(entry.get(field), int)
         }
-        seed = _hash_to_range(agent_name, flav.port_range_low, flav.port_range_high)
-        span = flav.port_range_high - flav.port_range_low + 1
+        seed = _hash_to_range(f"{agent_name}:{field}", low, high)
+        span = high - low + 1
         candidate = seed
         for _ in range(span):
             if candidate not in occupied:
-                agents[agent_name] = {"host": host, "local_port": candidate}
+                record = dict(existing) if existing.get("host") == host else {}
+                record["host"] = host
+                record[field] = candidate
+                agents[agent_name] = record
                 _save(path, data)
                 return Allocation(host=host, local_port=candidate)
-            candidate = flav.port_range_low + (
-                (candidate + 1 - flav.port_range_low) % span
-            )
+            candidate = low + ((candidate + 1 - low) % span)
         raise PortAllocatorError(
-            f"port range {flav.port_range_low}-{flav.port_range_high} "
-            f"exhausted for flavour {flavour!r} on host {host!r}"
+            f"{field} range {low}-{high} exhausted for flavour "
+            f"{flavour!r} on host {host!r}"
         )
 
 

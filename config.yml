@@ -46,5 +46,9 @@ flavours:
     default_port: 18789
     port_range_low: 28789
     port_range_high: 28999
+    # ssh (ADR-0013 D6): allocated exactly like the gateway port, never
+    # hand-kept in the registry. Must not overlap the gateway range.
+    ssh_port_range_low: 29789
+    ssh_port_range_high: 29999
     instance_fields_list: templates/instance-fields/openclaw.yml
     endpoints_file: openclaw_endpoints.yml

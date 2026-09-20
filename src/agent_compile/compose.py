@@ -43,6 +43,16 @@ def render(
 
     allocation = port_allocator.allocate(cfg, flavour, agent["name"], host)
 
+    # ADR-0013 D6: ssh is published on the host loopback beside the gateway,
+    # but only when the registry grants it. `app.ssh` present is the grant;
+    # absence is the only spelling of no-grant, the same idiom as `app.exec`.
+    # An unpublished port is one less thing listening on the host.
+    ssh_port = None
+    if "ssh" in (agent.get("app") or {}):
+        ssh_port = port_allocator.allocate_ssh(
+            cfg, flavour, agent["name"], host
+        ).local_port
+
     flav_cfg = cfg.flavour(flavour)
     local_user = agent.get("local_user") or {}
     supp_gids: List[int] = resolve_supp_gids(cfg, agent)
@@ -76,6 +86,7 @@ def render(
         "beaver_root": paths_mod.agent_beaver_root(agent),
         "local_root": paths_mod.agent_local_root(agent),
         "local_port": allocation.local_port,
+        "ssh_port": ssh_port,
         "default_port": flav_cfg.default_port,
         "health_endpoint": flav_cfg.health_endpoint,
     }
