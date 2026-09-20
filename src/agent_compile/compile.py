@@ -313,6 +313,84 @@ def _warn_if_unconfigured(cfg: Config, template_id) -> None:
 # --- instance overrides -----------------------------------------------------
 
 
+
+# ADR-0013 D5 + its two amendments. Every execution- or privilege-shaped gate
+# the schema exposes is emitted CLOSED unless the registry names it.
+EXEC_GRANT_KEY = "exec"
+
+
+def _tools_gates(granted: bool) -> Dict[str, Any]:
+    """The gate block for one `tools` node.
+
+    Emitted rather than omitted, because omission does not deny: neither
+    `exec.security` nor `exec.mode` declares a default in the 6.35 schema, and
+    agent-image's source read says omission likely resolves to ``full``. A
+    no-grant agent that merely lacks the block is exec-capable.
+
+    BOTH selectors, because 6.35 added ``mode`` beside ``security`` with no
+    stated precedence and neither deprecated. Setting both is correct under
+    either reading — the explicit-deny argument, one key further.
+    """
+    gates: Dict[str, Any] = {
+        # Privilege-shaped and unexamined: closed and stated for EVERY agent,
+        # granted or not. It gets examined the first time something needs it.
+        "elevated": {"enabled": False},
+        # A QuickJS runtime is a hand, and no registry grant names it today.
+        # Sandboxed is not the question; hands are. A future "sandboxed code
+        # without shell" grant is designed then, not left ajar now.
+        "codeMode": {"enabled": False},
+    }
+    if granted:
+        gates["exec"] = {"security": "full", "mode": "full"}
+    else:
+        gates["exec"] = {"security": "deny", "mode": "deny"}
+    return gates
+
+
+def _merge_tools_gates(node: Dict[str, Any], granted: bool) -> Dict[str, Any]:
+    """Apply the gates to one `tools` node, closing the list-shaped doors too."""
+    out = dict(node or {})
+    out.update(_tools_gates(granted))
+    deny = [d for d in (node or {}).get("deny") or [] if d != EXEC_GRANT_KEY]
+    if not granted:
+        deny.append(EXEC_GRANT_KEY)
+        # exec must not arrive through an allow-list either.
+        for key in ("allow", "alsoAllow"):
+            if key in out:
+                out[key] = [a for a in out[key] if a != EXEC_GRANT_KEY]
+    if deny:
+        out["deny"] = deny
+    return out
+
+
+def _apply_exec_grant(flavour_json: Dict[str, Any], agent: Dict[str, Any]) -> Dict[str, Any]:
+    """Compile the exec grant and the standing privilege closures.
+
+    The grant is the PRESENCE of ``app.exec`` in the registry entry — absence
+    is the only spelling of no-grant (ADR-0013 D5). ``enabled:`` is deliberately
+    not a key: a present-but-false block is a check that passes for the wrong
+    reason, since presence-matching tooling counts it as granted.
+
+    Emitted in BOTH places the schema allows a `tools` node — top level and each
+    ``agents.list[]`` entry — because precedence between them is unstated. A
+    denial in only one is a denial only if the other does not win.
+    """
+    granted = EXEC_GRANT_KEY in (agent.get("app") or {})
+    out = dict(flavour_json)
+    out["tools"] = _merge_tools_gates(out.get("tools") or {}, granted)
+
+    agents_block = out.get("agents")
+    if isinstance(agents_block, dict) and isinstance(agents_block.get("list"), list):
+        agents_block = dict(agents_block)
+        agents_block["list"] = [
+            {**entry, "tools": _merge_tools_gates(entry.get("tools") or {}, granted)}
+            if isinstance(entry, dict) else entry
+            for entry in agents_block["list"]
+        ]
+        out["agents"] = agents_block
+    return out
+
+
 def _apply_instance_overrides(
     cfg: Config, flavour_json: Dict[str, Any], agent: Dict[str, Any]
 ) -> Dict[str, Any]:
@@ -354,7 +432,8 @@ def _apply_instance_overrides(
         if endpoint:
             delta["dprox"] = {"endpoint": endpoint}
 
-    return merge_mod.merge_json(flavour_json, delta)
+    merged = merge_mod.merge_json(flavour_json, delta)
+    return _apply_exec_grant(merged, agent)
 
 
 def _lookup_dprox_endpoint(cfg: Config, org: str) -> Optional[str]:
