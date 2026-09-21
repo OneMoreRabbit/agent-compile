@@ -85,20 +85,25 @@ def test_a_partial_set_is_never_emitted(cfg):
 # --- absence 3: the plan says zero groups — the ONLY legitimate empty --------
 
 def test_zero_groups_in_the_plan_emits_empty(cfg):
-    """Empty is now a statement the plan makes, not residue of a missing key.
+    """Empty is a statement the plan makes, not residue of a missing key.
 
-    REACHABILITY UNDER REVIEW (2026-09-19). The orchestrator could not build an
-    agent with zero groups: rbac-compile derives the `share_class` group
-    unconditionally, so `agent_users[].groups` may never be empty in practice.
-    Routed to rbac-compile to confirm structurally; if they confirm, it becomes
-    a stated guarantee in `compiled-rbac-plan` and this test guards a path the
-    producer's contract makes unreachable.
+    REACHABLE IN PRODUCTION — rbac-compile answered this structurally
+    (2026-09-21). The never-empty guarantee is CONDITIONAL: it holds only for
+    an agent WITH a `share_class`, where the self-grant is unconditional. Two
+    producer states reach an empty `groups` list, both of them no-share_class:
 
-    Kept either way, and labelled either way. An unlabelled test whose subject
-    cannot occur is read by the next person as live coverage, or deleted as
-    dead — and both readings are wrong. If the guarantee lands, this becomes
-    the assertion that the guarantee is what makes the branch unnecessary,
-    rather than the branch being wrong.
+      (a) no `access[]` at all          — their validator warns
+      (b) `access[]` vocabulary-valid but matching no group in use
+                                        — their validator is CLEAN; only a
+                                          compiler warning is emitted
+
+    (b) is the one to hold onto: a legitimately-compiled agent can reach zero
+    groups with nothing failing anywhere. So this is live code on a live path,
+    not a guard for something the producer cannot produce — and the compile
+    must emit an empty set rather than refuse, because refusing would break
+    an agent the producer considers valid.
+
+    The conditional guarantee lands in compiled-rbac-plan v0.8.
     """
     _edit(cfg.compiled_plan_path(),
           lambda d: next(e for e in d["agent_users"] if e["name"] == AGENT)
